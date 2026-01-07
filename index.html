@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sora Tool</title>
+
+<style>
+body{margin:0;background:#f2f2f2;font-family:system-ui}
+.phone{max-width:420px;margin:auto;background:#fff;min-height:100vh;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+header{text-align:center;padding:14px}
+#summary{font-weight:900;color:#b30000;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+button{border:0;border-radius:8px;padding:10px;font-weight:700;color:#fff;cursor:pointer}
+.red{background:#8b0000}
+.blue{background:#0b84ff}
+.label{text-align:center;font-weight:700;padding:10px}
+main{padding:12px}
+.search{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px}
+table{width:100%;border-collapse:collapse}
+td{padding:6px;font-size:14px;border-bottom:1px solid #eee}
+.actions{display:flex;flex-direction:column;gap:4px}
+.dot{width:10px;height:10px;border-radius:50%;background:#ccc}
+.dot.posted{background:green}
+textarea{width:100%;height:70px;border-radius:8px;border:1px solid #ddd;padding:8px}
+.hidden{display:none}
+.hist{max-height:120px;overflow:auto;border:1px dashed #ddd;border-radius:6px;padding:6px}
+</style>
+</head>
+
+<body>
+<div class="phone">
+
+<header>
+  <div id="summary">ĐÃ ĐĂNG 0/173 SẢN PHẨM</div>
+
+  <div class="grid">
+    <button class="red" id="randomBtn">Random Sản phẩm</button>
+    <div class="label" id="currentName">Sản phẩm -</div>
+
+    <button class="blue" id="copyVideo">Copy Link Video</button>
+    <button class="blue" id="importPosted">Nhập SP đã đăng</button>
+
+    <button class="blue" id="copyCaption">Copy Caption</button>
+    <button class="blue" id="copyPosted">Copy SP đã đăng</button>
+
+    <button class="blue" id="copyShopee">Copy Link Shopee</button>
+    <button class="blue" id="toggleHistory">Lịch sử</button>
+
+    <button class="blue" id="toggleCaption">Caption/Tên SP</button>
+    <button class="blue" id="clearHistory">Xóa Lịch sử</button>
+  </div>
+</header>
+
+<main>
+  <div id="captionBox" class="hidden">
+    <textarea id="captionText" readonly></textarea>
+  </div>
+
+  <div id="historyBox" class="hidden">
+    <div class="hist" id="historyList"></div>
+  </div>
+
+  <input class="search" id="search" placeholder="Tìm theo số (#1) hoặc từ khóa">
+
+  <table>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const PRODUCTS = [{"id":1,"name":"Giày nam Barreda Trắng JI2306","drive":"https://drive.google.com/file/d/17jj6FD5p8NyVSATmMBJXM6AvicbgGqjh/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25093807689"},{"id":2,"name":"Giày nam Barreda Trắng JI2306","drive":"https://drive.google.com/file/d/1UCw-uHfe4W7yKbio0DQul8Hmpd5EQp2S/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25093807689"},{"id":3,"name":"Giày nam Barreda Trắng JI2306","drive":"https://drive.google.com/file/d/1CZifKfHWzhMjdHPKPLoZuaM1AM2RKNOh/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25093807689"},{"id":4,"name":"Giày nam Barreda Trắng JI2306","drive":"https://drive.google.com/file/d/1Pl2fpnMiJDCjvwnl6tlgwHencxa8--fc/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25093807689"},{"id":5,"name":"Giày nam Barreda Trắng JI2306","drive":"https://drive.google.com/file/d/1XXQ0Er7d9wEjnhBK2DTl7sFFIN4E0Pva/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25093807689"},{"id":6,"name":"Giày nam Grand Court Cloudfoam Trắng","drive":"https://drive.google.com/file/d/1_Nik9LCDkM0FpqDwNzdn4YrZzCMs7252/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332699341"},{"id":7,"name":"Giày nam Grand Court Cloudfoam Trắng","drive":"https://drive.google.com/file/d/1MsBGyS0HXXQrsuMZ-gruO3_cUjMHTu3d/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332699341"},{"id":8,"name":"Giày nam Grand Court Cloudfoam Trắng","drive":"https://drive.google.com/file/d/1WcVSjMHGNgJ15Z--n6za_eQyasYIodYp/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332699341"},{"id":9,"name":"Giày nam Grand Court Cloudfoam Trắng","drive":"https://drive.google.com/file/d/18DibWYyzjbypwI-Se9KV2otq0lL59PxS/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332699341"},{"id":10,"name":"Giày nam Grand Court Cloudfoam Trắng","drive":"https://drive.google.com/file/d/1CG0nHbuKNIXCb5BdjcRA89KvRJuHwWBk/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332699341"},{"id":11,"name":"Áo thun nam Aeroready Designed To Move","drive":"https://drive.google.com/file/d/1SD-glC1A2bgM_iAe4UlZedYd0o2vJLfK/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26482899158"},{"id":12,"name":"Áo thun nam Aeroready Designed To Move","drive":"https://drive.google.com/file/d/12YsR1or0JhnajJOyOreiHuwLAhT781yw/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26482899158"},{"id":13,"name":"Áo thun nam Aeroready Designed To Move","drive":"https://drive.google.com/file/d/1KshK5uG3imyugftLnqM9CbKUGNjXiqjD/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26482899158"},{"id":14,"name":"Áo thun nam Aeroready Designed To Move","drive":"https://drive.google.com/file/d/1GRcHuaWPVqLzBJlfTHuOfXyq-ddS5x2Z/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26482899158"},{"id":15,"name":"Áo thun nam Aeroready Designed To Move","drive":"https://drive.google.com/file/d/166cM_jIn_s24a7V6IMmZZMNPzkId6OzO/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26482899158"},{"id":16,"name":"Giày Unisex K 74 Trắng IG8950","drive":"https://drive.google.com/file/d/1PzAlQF4_z_zon-5q7t3lMalcXJcnVzIV/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493812622"},{"id":17,"name":"Giày Unisex K 74 Trắng IG8950","drive":"https://drive.google.com/file/d/1clipIPgOd_SwyM0Of71OBhd7-B13qQfC/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493812622"},{"id":18,"name":"Giày Unisex K 74 Trắng IG8950","drive":"https://drive.google.com/file/d/1kP1R5xrj4570t7ynd767bRnxlTANPibg/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493812622"},{"id":19,"name":"Giày Unisex K 74 Trắng IG8950","drive":"https://drive.google.com/file/d/1je75L9LTKEon27lR2Udy0OnJU686vNJJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493812622"},{"id":20,"name":"Giày Unisex K 74 Trắng IG8950","drive":"https://drive.google.com/file/d/160l0_pPq0Yw7a3jTgULLVSjLlyX6oQll/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493812622"},{"id":21,"name":"Giày chạy nam Galaxy 6 Trắng IE8136","drive":"https://drive.google.com/file/d/1Z5Clt0zjKsm0Ty_SVsqM36mAyrvmN3GE/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29032772664"},{"id":22,"name":"Giày chạy nam Galaxy 6 Trắng IE8136","drive":"https://drive.google.com/file/d/1b_NeIzU5a9aHqBE2Aukm3TmW0WdO9uxi/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29032772664"},{"id":23,"name":"Giày chạy nam Galaxy 6 Trắng IE8136","drive":"https://drive.google.com/file/d/1BY9h1ZRZxI3v_BdXUrOuHj3Qr5Gx7v37/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29032772664"},{"id":24,"name":"Giày chạy nam Galaxy 6 Trắng IE8136","drive":"https://drive.google.com/file/d/1WpW0O8EPJsKFOcLujSwAa-piphufbjtC/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29032772664"},{"id":25,"name":"Giày chạy nam Galaxy 6 Trắng IE8136","drive":"https://drive.google.com/file/d/1HfYZH8fs2uLoRnvsJy6R7Qhibb9kHHrc/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29032772664"},{"id":26,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1Z0nuI1TEHxZjA1zFs1z8B2Pl5Re0pS-d/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28232719563"},{"id":27,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1CnQFDzBXn-EsDnWZqCXD0LMIrKJ-Qpa2/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28232719563"},{"id":28,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1dXft6NWRDNVzuEIU5P_LGu2VGqLoYQ3Z/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28232719563"},{"id":29,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/15W1eifOfJ90Iqo4zpQ1f0sPx3eeR42lP/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28232719563"},{"id":30,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/13gLY5mVbeimW975LW9oHFPUwDv8Wz0C5/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28232719563"},{"id":31,"name":"Giày chạy nam Duramo SL 2 Trắng","drive":"https://drive.google.com/file/d/1x4d1KjYMBsONSp3fXh8IBW1AfklU4wKe/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25693795833"},{"id":32,"name":"Giày chạy nam Duramo SL 2 Trắng","drive":"https://drive.google.com/file/d/14VKpRz9uVngRERwf-2hWm-wjVE3aVegM/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25693795833"},{"id":33,"name":"Giày chạy nam Duramo SL 2 Trắng","drive":"https://drive.google.com/file/d/1YkPsw9I0BDuMYo61qNWPmgGvWBbQ2QAr/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25693795833"},{"id":34,"name":"Giày chạy nam Duramo SL 2 Trắng","drive":"https://drive.google.com/file/d/1zGwYdHnwWdeDmTqfVza7cNw7vE7LfKqY/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25693795833"},{"id":35,"name":"Giày chạy nam Duramo SL 2 Trắng","drive":"https://drive.google.com/file/d/1A7KsqEehAOj3OHZVmHzfDOit8PQPKD0u/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25693795833"},{"id":36,"name":"Dép Adilette Lumia Unisex Nâu JP9579","drive":"https://drive.google.com/file/d/1mnQhpm7Xqrs-vqS3n0KLhHRHiCQWsrv-/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882721831"},{"id":37,"name":"Dép Adilette Lumia Unisex Nâu JP9579","drive":"https://drive.google.com/file/d/17U3K7H2zH9M4Xt-dvc9HHD2zTLB7JGty/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882721831"},{"id":38,"name":"Dép Adilette Lumia Unisex Nâu JP9579","drive":"https://drive.google.com/file/d/10Bx8uyN19gTsiMnciFwGYVE_nWnMEumr/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882721831"},{"id":39,"name":"Dép Adilette Lumia Unisex Nâu JP9579","drive":"https://drive.google.com/file/d/1nFBKQxDLqv5VaLtBX7SH4y4NhtUti_TD/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882721831"},{"id":40,"name":"Dép Adilette Lumia Unisex Nâu JP9579","drive":"https://drive.google.com/file/d/1ccHqWRtYEFMBjH1O6LGX5k_c4_rMrCdv/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882721831"},{"id":41,"name":"Giày chạy nam Duramo SL Trắng FY6683","drive":"https://drive.google.com/file/d/1V2gdxxLkSZT0673j69kkDI-WJPlBF0SS/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29132734772"},{"id":42,"name":"Giày chạy nam Duramo SL Trắng FY6683","drive":"https://drive.google.com/file/d/1WI-X3xNKg_PfCYq0-y3KMnWZM7vq45CB/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29132734772"},{"id":43,"name":"Giày chạy nam Duramo SL Trắng FY6683","drive":"https://drive.google.com/file/d/1p__OD2R4sCF5fsHHtvibh0G9kKYgEdP9/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29132734772"},{"id":44,"name":"Giày chạy nam Duramo SL Trắng FY6683","drive":"https://drive.google.com/file/d/1-d1y9pi2N2kDwYJPjJiB_lHEKdzyPYX0/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29132734772"},{"id":45,"name":"Giày chạy nam Duramo SL Trắng FY6683","drive":"https://drive.google.com/file/d/1uPLRHGTKYJ-u_IZqt8JEtshvhQZ1Ox_z/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29132734772"},{"id":46,"name":"Dép Adilette Lumia Unisex Trắng JP9578","drive":"https://drive.google.com/file/d/110kOCVoEt7d8NxKwjQNT_3agqoHc39KG/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28982720941"},{"id":47,"name":"Dép Adilette Lumia Unisex Trắng JP9578","drive":"https://drive.google.com/file/d/1-m-X1YRMQmYTIRwasReBg79SIpX0mrkP/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28982720941"},{"id":48,"name":"Dép Adilette Lumia Unisex Trắng JP9578","drive":"https://drive.google.com/file/d/15qwLkQYyQauX3geEx3OPRhzU2SJf2uMj/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28982720941"},{"id":49,"name":"Dép Adilette Lumia Unisex Trắng JP9578","drive":"https://drive.google.com/file/d/16QjWjZQeKnfdcfXwZ3XlNCGleVwjJMvo/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28982720941"},{"id":50,"name":"Dép Adilette Lumia Unisex Trắng JP9578","drive":"https://drive.google.com/file/d/1KhyHHVBtXVF-yGrMkP7YDoZ8GNF7A9iz/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28982720941"},{"id":51,"name":"Giày nữ Lite Racer CLN 2.0 Đen","drive":"https://drive.google.com/file/d/1ReS3SAQbyBrOYA1m3PUoz4TTQqUua9no/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28532683979"},{"id":52,"name":"Giày nữ Lite Racer CLN 2.0 Đen","drive":"https://drive.google.com/file/d/18bBw97G8ss6M0PRnUdhwHHz13xoVbpfa/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28532683979"},{"id":53,"name":"Giày nữ Lite Racer CLN 2.0 Đen","drive":"https://drive.google.com/file/d/1PPHUEmtUxLX5mRllX-e5IOHGb8t4D3_E/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28532683979"},{"id":54,"name":"Giày nữ Lite Racer CLN 2.0 Đen","drive":"https://drive.google.com/file/d/1r3MxZoxiwvF2mMIJzWKuvb5ohTdjYprP/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28532683979"},{"id":55,"name":"Giày chạy nam Runfalcon 5 Đen IH7758","drive":"https://drive.google.com/file/d/1ZLZ0FzoK1QC6OtTUQGtPwKdYDHgC2KTl/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26232788466"},{"id":56,"name":"Giày chạy nam Runfalcon 5 Đen IH7758","drive":"https://drive.google.com/file/d/1lBLFxArmIseFx7kS4AGebRLNFOEUbwY0/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26232788466"},{"id":57,"name":"Giày chạy nam Runfalcon 5 Đen IH7758","drive":"https://drive.google.com/file/d/1BNtn-AQE4MNOPgY7PXZAID2FeZtfwjqK/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26232788466"},{"id":58,"name":"Giày chạy nam Runfalcon 5 Đen IH7758","drive":"https://drive.google.com/file/d/1BJp_D5Q8irmfnOzZeGj3XFqzpsdmzon0/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26232788466"},{"id":59,"name":"Giày chạy nam Runfalcon 5 Đen IH7758","drive":"https://drive.google.com/file/d/1444G91a2V8wzQcirGs2mIbbS_cqa5dDL/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26232788466"},{"id":60,"name":"Giày đá bóng F50 Club Turf Trắng","drive":"https://drive.google.com/file/d/1kZX-nQBBqZkRwHjo6tppwT8hfmvgkv2I/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332721241"},{"id":61,"name":"Giày đá bóng F50 Club Turf Trắng","drive":"https://drive.google.com/file/d/14CKVXccJDaS7aM31oUeDU-3P08YH3sDa/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332721241"},{"id":62,"name":"Giày đá bóng F50 Club Turf Trắng","drive":"https://drive.google.com/file/d/1rpnHaifn8D9chnnWir62_OoSFha0S67v/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332721241"},{"id":63,"name":"Giày đá bóng F50 Club Turf Trắng","drive":"https://drive.google.com/file/d/1PYg98kk2QsA6JJa8kKYnfFLuu-B53YD6/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332721241"},{"id":64,"name":"Giày đá bóng F50 Club Turf Trắng","drive":"https://drive.google.com/file/d/13rP440ob-zrmoQCAVvyMSB6MQnfnDwN9/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29332721241"},{"id":65,"name":"Áo Polo Tennis Club Nam Đen HS3278","drive":"https://drive.google.com/file/d/1JSZ1whyXPcstJGUuajRZVioU-XsalWnV/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26332760673"},{"id":66,"name":"Áo Polo Tennis Club Nam Đen HS3278","drive":"https://drive.google.com/file/d/13iSwagVfZ-NSBsoMAr-3gdd9-X-VezPi/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26332760673"},{"id":67,"name":"Áo Polo Tennis Club Nam Đen HS3278","drive":"https://drive.google.com/file/d/1t8g3wNExzhYrF4rQqBKG_FU20n6nN_tv/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26332760673"},{"id":68,"name":"Áo Polo Tennis Club Nam Đen HS3278","drive":"https://drive.google.com/file/d/1Z_H7pTtCgd-3It6vwrW52vsktWCEa4Be/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26332760673"},{"id":69,"name":"Áo Polo Tennis Club Nam Đen HS3278","drive":"https://drive.google.com/file/d/1vKsKQ8ItpWIm-rz9VcYuD_MsoDTH2v_-/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26332760673"},{"id":70,"name":"Dép bơi Adilette Unisex Đen GZ5922","drive":"https://drive.google.com/file/d/1d2g3F0_sBLQ1PKrI2UJQtyzeguETC55_/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29082705101"},{"id":71,"name":"Dép bơi Adilette Unisex Đen GZ5922","drive":"https://drive.google.com/file/d/1CzCVbFFWnlpG97srB6LcjiFzKm_5qeIu/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29082705101"},{"id":72,"name":"Dép bơi Adilette Unisex Đen GZ5922","drive":"https://drive.google.com/file/d/1YS0MDs2ctzwldSr1ZS73PEixyfQDg5rm/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29082705101"},{"id":73,"name":"Dép bơi Adilette Unisex Đen GZ5922","drive":"https://drive.google.com/file/d/1Pb0A4n2aIoOl_bUZfXJN4FSLz1A6wMmO/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29082705101"},{"id":74,"name":"Dép bơi Adilette Unisex Đen GZ5922","drive":"https://drive.google.com/file/d/18Ef4s6QPGfaWYnBIl9vlCwh_Cl0s7ytr/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29082705101"},{"id":75,"name":"Giày chạy nam Duramo SL Xanh GV7126","drive":"https://drive.google.com/file/d/1GBhwun66fZ7yHjowZOtJGaOUWqWidpfH/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27482786693"},{"id":76,"name":"Giày chạy nam Duramo SL Xanh GV7126","drive":"https://drive.google.com/file/d/1H4k0E5sgb2JpNTWY6DtfKZ91ggks-cjj/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27482786693"},{"id":77,"name":"Giày chạy nam Duramo SL Xanh GV7126","drive":"https://drive.google.com/file/d/1tzGy8ozXEEmR4m7qeKHBhkVQglvFAybM/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27482786693"},{"id":78,"name":"Giày chạy nam Duramo SL Xanh GV7126","drive":"https://drive.google.com/file/d/15X9zS6wCbb0lJHvZF_7nFGBPV6bStkM1/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27482786693"},{"id":79,"name":"Giày chạy nam Duramo SL Xanh GV7126","drive":"https://drive.google.com/file/d/1MMLf9qzyNQzRYriNE1c837nS_APXrdxV/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27482786693"},{"id":80,"name":"Giày nam NY 90 Trắng GV8849","drive":"https://drive.google.com/file/d/1kVnZ8lR4EVsiSPO1i-f0jTXF6vrgDamY/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382779870"},{"id":81,"name":"Giày nam NY 90 Trắng GV8849","drive":"https://drive.google.com/file/d/184b6-JAaEW2_UN-vbkbLuAyPvZgpFQsF/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382779870"},{"id":82,"name":"Giày nam NY 90 Trắng GV8849","drive":"https://drive.google.com/file/d/13zrF9Kdqkg4HXgenu2jajyWy2_J5eJ5N/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382779870"},{"id":83,"name":"Giày nam NY 90 Trắng GV8849","drive":"https://drive.google.com/file/d/16Gm1480zGjXbxwsAvT-bqExyvx5b0QB3/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382779870"},{"id":84,"name":"Giày nam NY 90 Trắng GV8849","drive":"https://drive.google.com/file/d/188UD4qnYCEuF3Ich6n9lcY-fBADpCndW/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382779870"},{"id":85,"name":"Áo Polo Tennis 3 sọc Club Đen","drive":"https://drive.google.com/file/d/1f9P8V_0OykMgyZxjkrNDZS2IMH-JFMg1/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24343792543"},{"id":86,"name":"Áo Polo Tennis 3 sọc Club Đen","drive":"https://drive.google.com/file/d/1GgpSvP1JsOujjK5y-5jmWSAsXwOyW1wy/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24343792543"},{"id":87,"name":"Áo Polo Tennis 3 sọc Club Đen","drive":"https://drive.google.com/file/d/1sFK9CmLRgKQ3R5bSWGEN5hu1TDhwwkm_/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24343792543"},{"id":88,"name":"Áo Polo Tennis 3 sọc Club Đen","drive":"https://drive.google.com/file/d/1KVqanwiRum0QLzcUDP3URNWA6jedmUom/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24343792543"},{"id":89,"name":"Áo Polo Tennis 3 sọc Club Đen","drive":"https://drive.google.com/file/d/1FCip3nnTH_7THYvsL9oSaML8msBMkAZF/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24343792543"},{"id":90,"name":"Dép bơi Adilette Unisex Trắng GW8748","drive":"https://drive.google.com/file/d/1GjCRoNVPu1Ke3Ahccg6_ly_D5apa2X84/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382772176"},{"id":91,"name":"Dép bơi Adilette Unisex Trắng GW8748","drive":"https://drive.google.com/file/d/1Nvo7c1n8nAjM81lnl8OkVhbpEijR1yqV/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382772176"},{"id":92,"name":"Dép bơi Adilette Unisex Trắng GW8748","drive":"https://drive.google.com/file/d/1weimVIo4KXWjsM50uudMwWQIpsg4nsAg/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382772176"},{"id":93,"name":"Dép bơi Adilette Unisex Trắng GW8748","drive":"https://drive.google.com/file/d/1vQpsQyoprDrXkDt6jqkEDrPLS_dPbIJP/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382772176"},{"id":94,"name":"Dép bơi Adilette Unisex Trắng GW8748","drive":"https://drive.google.com/file/d/1e-zl22zQTeQpkiO2GSYGe4IRjrAmYVU3/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26382772176"},{"id":95,"name":"Giày Unisex K 74 Đen IG8951","drive":"https://drive.google.com/file/d/1Mxyn2zeVVItp-k0DU60fL_RdXMiXS68h/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26282798404"},{"id":96,"name":"Giày Unisex K 74 Đen IG8951","drive":"https://drive.google.com/file/d/1JabWrsH-r2C8YI73-QbQbfFhZoHCK5A_/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26282798404"},{"id":97,"name":"Giày Unisex K 74 Đen IG8951","drive":"https://drive.google.com/file/d/18eDEtC4BNSCUtyW4nfKmbcYYdWDjg67P/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26282798404"},{"id":98,"name":"Giày Unisex K 74 Đen IG8951","drive":"https://drive.google.com/file/d/1MIX1g8xqdJHXEWkZ_F0_ATSRr1iS2Rjp/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26282798404"},{"id":99,"name":"Giày Unisex K 74 Đen IG8951","drive":"https://drive.google.com/file/d/1_4tenbe7vxnxz48ZBAqlMlH6sGTYtI_D/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26282798404"},{"id":100,"name":"Dép Adilette Aqua Unisex Xanh F35542","drive":"https://drive.google.com/file/d/1LIu4_KYNy06zYtE-Wm9iT8q78JNrl9U6/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29882775315"},{"id":101,"name":"Dép Adilette Aqua Unisex Xanh F35542","drive":"https://drive.google.com/file/d/1XSZI7Ov3lq6hw535GFZLBLUQCSqwCMdc/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29882775315"},{"id":102,"name":"Dép Adilette Aqua Unisex Xanh F35542","drive":"https://drive.google.com/file/d/147v18DnJyi0uq5JSpe48uYv0yYSt4dVd/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29882775315"},{"id":103,"name":"Dép Adilette Aqua Unisex Xanh F35542","drive":"https://drive.google.com/file/d/1D5AZ_5ntEgZIsRYykVkGpwVtAPCM9ltt/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29882775315"},{"id":104,"name":"Dép Adilette Aqua Unisex Xanh F35542","drive":"https://drive.google.com/file/d/1VpgFgwtlnRLPERLb6Ok_x5VNx_FQXc_G/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29882775315"},{"id":105,"name":"Áo Polo Tennis Club Nam Xanh HS3279","drive":"https://drive.google.com/file/d/1UROk0H6cvRSVP1iFW8dyVVsdu8zwh0eF/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493797523"},{"id":106,"name":"Áo Polo Tennis Club Nam Xanh HS3279","drive":"https://drive.google.com/file/d/1p6bE1b-J7um30QypvQnX17r28cghzVHh/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493797523"},{"id":107,"name":"Áo Polo Tennis Club Nam Xanh HS3279","drive":"https://drive.google.com/file/d/164HjHF2S57quL7lpUSkN54bgIGtcTtjI/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493797523"},{"id":108,"name":"Áo Polo Tennis Club Nam Xanh HS3279","drive":"https://drive.google.com/file/d/1FlG_RT5dA9X4n-N3mJeYoa1SZIpwcL6-/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493797523"},{"id":109,"name":"Áo Polo Tennis Club Nam Xanh HS3279","drive":"https://drive.google.com/file/d/1LpYuI03OaJUVr5HNNEka1xWTQX0iF2-b/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24493797523"},{"id":110,"name":"Giày Tennis nam CourtJam Control 3 Trắng","drive":"https://drive.google.com/file/d/1j3KwQheCQxa936sM6gBTy8qpslevTnxx/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29932779858"},{"id":111,"name":"Giày Tennis nam CourtJam Control 3 Trắng","drive":"https://drive.google.com/file/d/1QkRqgZKe5gr-qB4QUFTaxs2GVlAr0DTB/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29932779858"},{"id":112,"name":"Giày Tennis nam CourtJam Control 3 Trắng","drive":"https://drive.google.com/file/d/1w5Wmos1JYWpNhtEGxA57dAPkYL_-ngh3/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29932779858"},{"id":113,"name":"Giày Tennis nam CourtJam Control 3 Trắng","drive":"https://drive.google.com/file/d/1Vv5rEMjzLHKBOnVUWJT2CQTurlqD2CEU/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29932779858"},{"id":114,"name":"Giày Tennis nam CourtJam Control 3 Trắng","drive":"https://drive.google.com/file/d/1lP-SHv0kFNRpq3ulEEU7kH9Un3qXJRlf/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29932779858"},{"id":115,"name":"Giày chạy nam Galaxy 6 Đen GW4138","drive":"https://drive.google.com/file/d/1rfkT6r_djFCpbu51OVT98MR-vo4Y7Qaa/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29782699454"},{"id":116,"name":"Giày chạy nam Galaxy 6 Đen GW4138","drive":"https://drive.google.com/file/d/1x9kb-xFh7SgRD5oUfqiCxmETwkQ_ULKC/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29782699454"},{"id":117,"name":"Giày chạy nam Galaxy 6 Đen GW4138","drive":"https://drive.google.com/file/d/1y8yS1JKRSCKhLYsV1BkTOfmPkGabK0Fc/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29782699454"},{"id":118,"name":"Giày chạy nam Galaxy 6 Đen GW4138","drive":"https://drive.google.com/file/d/1P8oUZzcg8p9gONCwvAyUwvhBBqmisg9S/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29782699454"},{"id":119,"name":"Giày chạy nam Galaxy 6 Đen GW4138","drive":"https://drive.google.com/file/d/1ixU1O1cluSSDXNAKrLILGz5jj1bf9zdz/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29782699454"},{"id":120,"name":"Giày chạy nam Ultrarun 5 Đen IH2640","drive":"https://drive.google.com/file/d/1PVon8_uSodMady0zCh_A-Bld6vLH2_R9/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24393822179"},{"id":121,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1DZPfOMM3yCu6z7ByUXoXaV4qs3vyRyhu/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29582720300"},{"id":122,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1YI6O19lEIcGKqF4C0Ag6RSRv31D4a5ux/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29582720300"},{"id":123,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1baKxtazfRWGtWPxB5513JzGh6saJI34Q/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29582720300"},{"id":124,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1j0kHxHHk9VRE-LJro7yShbnk_RAGuvnG/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29582720300"},{"id":125,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1CHm4hOplMSLJz3TkgPyMxilxc6gGWoX6/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29582720300"},{"id":126,"name":"Giày nam Barreda Be JR1319","drive":"https://drive.google.com/file/d/1sg-6CZ_irupDuAdhlO0cM0Lf9NgB3NLo/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29535662434"},{"id":127,"name":"Giày nam Barreda Be JR1319","drive":"https://drive.google.com/file/d/1MgKRfBJL90yFZhMEQpnO2p3AKWuxrTux/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29535662434"},{"id":128,"name":"Giày nam Barreda Be JR1319","drive":"https://drive.google.com/file/d/1YNg5lXyPjoLO_DFtSPKxXbDXC2pp6BCY/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29535662434"},{"id":129,"name":"Giày nam Barreda Be JR1319","drive":"https://drive.google.com/file/d/1UTy_nsv-bl4ib-gGe3egTQVTe44EsouI/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/29535662434"},{"id":130,"name":"Dép sục Adilette Unisex Đen GZ5886","drive":"https://drive.google.com/file/d/1mZQW2-hRybTCqfO0XheP5-jxwC7xOFOP/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882766659"},{"id":131,"name":"Dép sục Adilette Unisex Đen GZ5886","drive":"https://drive.google.com/file/d/1iBQlZHaoZypZybmWLGxe_q_0SF69uXBa/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882766659"},{"id":132,"name":"Dép sục Adilette Unisex Đen GZ5886","drive":"https://drive.google.com/file/d/1ydtleXCDD2Te-Mz53vPOgvH2ylER7rDe/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882766659"},{"id":133,"name":"Dép sục Adilette Unisex Đen GZ5886","drive":"https://drive.google.com/file/d/1lC8e0c5DWIGyaNhp5z8ZXoD2U4vvuHFh/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882766659"},{"id":134,"name":"Dép sục Adilette Unisex Đen GZ5886","drive":"https://drive.google.com/file/d/13DuiQTGBdVmmStniGAX77JYwLLR046Zc/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882766659"},{"id":135,"name":"Giày nam Barreda Đen JI2307","drive":"https://drive.google.com/file/d/1zt2ba-6Gy8sB3EUwfVP3H20U2vN86pOU/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26932708961"},{"id":136,"name":"Giày nam Barreda Đen JI2307","drive":"https://drive.google.com/file/d/1EVBndf-G8FVuwR4pl7tw6c1MS5KUjrsA/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26932708961"},{"id":137,"name":"Giày nam Barreda Đen JI2307","drive":"https://drive.google.com/file/d/1qK4pbbRdVvXp-NdUvppoY1Il6w1XhIJE/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26932708961"},{"id":138,"name":"Giày nam Barreda Đen JI2307","drive":"https://drive.google.com/file/d/12D3rcdtJpX3gOHTYaK0SDpiGz02qy29N/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26932708961"},{"id":139,"name":"Giày nam Barreda Đen JI2307","drive":"https://drive.google.com/file/d/11OOlyc_zMlkX8bVmIdOZ-kZUsCvVZ0ue/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26932708961"},{"id":140,"name":"Giày nam VL Court 2.0 Xanh JI0496","drive":"https://drive.google.com/file/d/1k-f-6Kn66c3E5pKgzVa3E50uBk0xXPk7/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25243785028"},{"id":141,"name":"Giày nam VL Court 2.0 Xanh JI0496","drive":"https://drive.google.com/file/d/1gtcVsJL37QiveeeR-gZSqtwvg3DQvkbd/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25243785028"},{"id":142,"name":"Giày nam VL Court 2.0 Xanh JI0496","drive":"https://drive.google.com/file/d/1pxvYlPSsBt3ktvy0PxW0oRmdxZMEHY69/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25243785028"},{"id":143,"name":"Giày nam VL Court 2.0 Xanh JI0496","drive":"https://drive.google.com/file/d/1KABZlWFbfbA_9bwAJnMZHDBqnVhf6TuN/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25243785028"},{"id":144,"name":"Giày nam VL Court 2.0 Xanh JI0496","drive":"https://drive.google.com/file/d/1DUuo1s2HgOTWf3HHbBBbgnnwW7ZbWUiz/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25243785028"},{"id":145,"name":"Dép bơi Adilette Unisex Đen GZ3772","drive":"https://drive.google.com/file/d/18f9eEOFUMYRT98Io34vDOixSWak6MqXl/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24693806736"},{"id":146,"name":"Dép bơi Adilette Unisex Đen GZ3772","drive":"https://drive.google.com/file/d/1rhmdS7O_DtdR5c0c4GactD23Hb99Ubx4/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24693806736"},{"id":147,"name":"Dép bơi Adilette Unisex Đen GZ3772","drive":"https://drive.google.com/file/d/1a36rHkBYocB93ATGfyz4GbToOC4GOItQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24693806736"},{"id":148,"name":"Dép bơi Adilette Unisex Đen GZ3772","drive":"https://drive.google.com/file/d/1i5VcX6m1gBnV7BgOB8D2ios4p3O0goCK/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24693806736"},{"id":149,"name":"Dép bơi Adilette Unisex Đen GZ3772","drive":"https://drive.google.com/file/d/1za_apHfbtfUeGOxwK3gnSlguLTRbxynv/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/24693806736"},{"id":150,"name":"Dép tắm Adilette trẻ em Trắng HP7606","drive":"https://drive.google.com/file/d/1-FMDuMViYKl1dpVJkdNnge2nkDv_0yWv/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26982711719"},{"id":151,"name":"Dép tắm Adilette trẻ em Trắng HP7606","drive":"https://drive.google.com/file/d/1vxQUOzpwb-TH9EzKFeoKMfGc-u2EXkvs/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26982711719"},{"id":152,"name":"Dép tắm Adilette trẻ em Trắng HP7606","drive":"https://drive.google.com/file/d/1VOEPiSRNns1NDcB8cPJhQvt3vuGead8j/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26982711719"},{"id":153,"name":"Dép tắm Adilette trẻ em Trắng HP7606","drive":"https://drive.google.com/file/d/1OmE8ahL0tbIGKYOwtBWsP8VqAGohmjI9/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26982711719"},{"id":154,"name":"Dép tắm Adilette trẻ em Trắng HP7606","drive":"https://drive.google.com/file/d/1IhJSLV3-pKSeMG3UYgGGMqHj0njDXCTB/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26982711719"},{"id":155,"name":"Giày chạy nam Runfalcon 5 Đen IE8812","drive":"https://drive.google.com/file/d/1hvqQKpMhaNrGz9ab1k9_VH0aa_xvLZnV/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26182794075"},{"id":156,"name":"Giày chạy nam Runfalcon 5 Đen IE8812","drive":"https://drive.google.com/file/d/13niQTvHPqg5BG5_FgO7pK-rYI4BydESr/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26182794075"},{"id":157,"name":"Giày chạy nam Runfalcon 5 Đen IE8812","drive":"https://drive.google.com/file/d/1bDEvtNyytvwuT8wU6zy-BiwjIa_ShQKm/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26182794075"},{"id":158,"name":"Giày chạy nam Runfalcon 5 Đen IE8812","drive":"https://drive.google.com/file/d/134KC6Kg_BstreI0xyrAwH8l9maPiG4y3/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26182794075"},{"id":159,"name":"Giày chạy nam Runfalcon 5 Đen IE8812","drive":"https://drive.google.com/file/d/1in34DCaxdrcG6ZbZnV34dzbNEd9vWGkk/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/26182794075"},{"id":160,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1hanzrZR9xNHpkwYtkEy6Av39LpCvyT0Z/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25193769870"},{"id":161,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/10XOIXu0uSek3xOerWYA8pMzr6VuTtE0b/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25193769870"},{"id":162,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1Xy_X4TMwmezXw8h2qB9tbTe-UkyVDvt5/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25193769870"},{"id":163,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/1JWLPeDUcO4wQT4ajH5Ok_7nXBGYGY35G/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25193769870"},{"id":164,"name":"Giày chạy nam Duramo SL 2 Đen","drive":"https://drive.google.com/file/d/11pdpg_Q54NYiHPj_MaNjd6Rala6AANVv/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/25193769870"},{"id":165,"name":"Quần short chạy 2in1 Own The Run","drive":"https://drive.google.com/file/d/1FBWeEwhV9pSYyeVNQdGWXhw847crGQBL/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882763032"},{"id":166,"name":"Quần short chạy 2in1 Own The Run","drive":"https://drive.google.com/file/d/12eWwgySwPmONjMcBmIYyvLGWniDuIMpW/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882763032"},{"id":167,"name":"Quần short chạy 2in1 Own The Run","drive":"https://drive.google.com/file/d/10hRFGZTH0x6oYdezZUgmhbAw9bnIHlqh/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882763032"},{"id":168,"name":"Quần short chạy 2in1 Own The Run","drive":"https://drive.google.com/file/d/11Ka-OPnpVRocuVTJ7aLlkahR48Y6VzTV/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/27882763032"},{"id":169,"name":"Giày nữ VL Court Bold Đỏ IH0366","drive":"https://drive.google.com/file/d/1g4UK7KGWs_rBgNDAUG8llTqNE9onzTSU/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28632716656"},{"id":170,"name":"Giày nữ VL Court Bold Đỏ IH0366","drive":"https://drive.google.com/file/d/1EWlahMk0Lyp6klObW51FOE1l3jEiTU2s/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28632716656"},{"id":171,"name":"Giày nữ VL Court Bold Đỏ IH0366","drive":"https://drive.google.com/file/d/17VQlLnLuXSAe7ya90eKNXQfhbBiFzlsB/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28632716656"},{"id":172,"name":"Giày nữ VL Court Bold Đỏ IH0366","drive":"https://drive.google.com/file/d/15otmqOJEZFkHCioMZ8s7S9BSXgz0yvnb/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28632716656"},{"id":173,"name":"Giày nữ VL Court Bold Đỏ IH0366","drive":"https://drive.google.com/file/d/13hIMhornJC2zQ1GKX5pnpTIImqqnCbz9/view?usp=drivesdk","shopee":"https://shopee.vn/product/71009635/28632716656"}];
+let posted = JSON.parse(localStorage.getItem('posted')||'{}');
+let history = JSON.parse(localStorage.getItem('history')||'[]');
+let current = null;
+
+/* ================= CAPTION GENERATOR ================= */
+const captionTemplates = [
+  "Săn sale chính hãng {name} giá tốt",
+  "Deal hời cực sốc {name} chính hãng",
+  "Giá rẻ bất ngờ cho {name} chính hãng",
+  "Giảm sâu số lượng có hạn {name}",
+  "Đừng bỏ lỡ {name} giá cực hời",
+  "Siêu ưu đãi {name} chính hãng hôm nay",
+  "Mua ngay {name} với giá siêu rẻ",
+  "Sản phẩm hot {name} giảm mạnh",
+  "Giá sốc hôm nay cho {name}",
+  "Mua liền tay {name} giá ưu đãi",
+  "Flash sale cực khủng cho {name} chính hãng",
+"Nhanh tay chốt đơn {name} siêu ưu đãi",
+"Mua {name} hôm nay – nhận giá hời liền tay",
+"Cơ hội vàng săn {name} chính hãng giá rẻ",
+"Chớp ngay deal ngon cho {name}",
+"Giảm sốc cực sâu {name} chính hãng hôm nay",
+"Hàng hot {name} đang giảm giá cực mạnh",
+"Đặt nhanh kẻo lỡ {name} giá tốt nhất",
+"Săn ngay {name} chính hãng – deal cực hời",
+"Giá hủy diệt cho {name} chỉ hôm nay",
+"Cực phẩm {name} chính hãng giảm đến 50%",
+"Đại tiệc sale – {name} giá rẻ không tưởng",
+"Sắm liền {name} – ưu đãi đang chờ",
+"Đặc biệt hôm nay: {name} chính hãng siêu sale",
+"Siêu phẩm {name} giá tốt nhất thị trường",
+"Chỉ hôm nay: săn {name} giá sốc không giới hạn",
+"Giảm giá cực đỉnh – {name} chính hãng chờ bạn",
+"Deal ngon bất ngờ cho {name} siêu hot",
+"Cơ hội hiếm có – {name} giá giảm cực sâu",
+"Săn ngay {name} chính hãng – giá mềm bất ngờ",
+"Bắt trend liền tay với {name} chính hãng",
+"Giá ưu đãi đặc biệt cho tín đồ săn sale {name}",
+"Giảm sâu chưa từng có – {name} chờ bạn rinh",
+"Deal ngon khó cưỡng cho {name} chính hãng",
+"Thời điểm vàng để mua {name} giá rẻ",
+"Săn ngay {name} chính hãng – càng mua càng lời",
+"Mở bán cực hot – {name} giảm giá khủng",
+"Không thể tin nổi – {name} giá thấp kỷ lục",
+"Giảm giá cực đại – cơ hội sở hữu {name}",
+"Nhanh tay đặt {name} – ưu đãi giới hạn",
+"Mua {name} hôm nay, nhận quà liền tay",
+"Ưu đãi bùng nổ cho {name} chính hãng",
+"Săn deal nửa giá cho {name} – chỉ hôm nay",
+"Giảm mạnh mừng sale – {name} giá quá hời",
+"Hàng hot {name} – giá chỉ bằng nửa thị trường",
+"Cơ hội cuối cùng sở hữu {name} giá siêu hời",
+"Siêu sale chính hãng {name} – săn ngay kẻo lỡ",
+"Giá tụt sàn cho {name} chính hãng cực chất",
+"Giảm ngay hôm nay – {name} chính hãng giá mềm",
+"Mua {name} bây giờ – nhận ưu đãi khủng liền tay",
+"Chỉ hôm nay: {name} giảm giá cực hấp dẫn",
+"Đừng chần chừ – {name} đang sale cực khủng",
+"Ưu đãi khủng nhất tháng cho {name} chính hãng",
+"Giá giảm chạm đáy – {name} hot nhất hôm nay",
+"Săn deal {name} nhanh tay kẻo hết hàng",
+"Giảm giá khủng – cơ hội sở hữu {name} chính hãng",
+"Hàng xịn {name} giá rẻ bất ngờ, mua ngay!",
+"Chớp cơ hội – {name} chính hãng đang đại hạ giá",
+"Mua liền tay {name}, ưu đãi khủng chờ bạn",
+"Giảm giá chưa từng thấy cho {name}",
+"Deal cực chất – {name} giá siêu ưu đãi",
+"Cực phẩm {name} – giá chỉ bằng 1/2 hôm nay",
+"Nhanh tay rước {name} – giá giảm cực mạnh",
+"Hạ giá toàn sàn – {name} chính hãng giảm sâu",
+"Không thể bỏ qua: {name} đang sale cháy hàng",
+"Giảm giá cực sốc, săn ngay {name} chính hãng",
+"Hàng hot {name} chính hãng, mua sớm lời to",
+"Đặt ngay {name} – deal ngon đang đợi",
+"Cực kỳ hấp dẫn – {name} giá thấp chưa từng",
+"Siêu khuyến mãi {name}, giá chỉ hôm nay thôi!",
+"Giá cực mềm cho {name} – săn ngay kẻo lỡ!",
+"Mua {name} hôm nay, tiết kiệm liền tay",
+"Hàng chính hãng {name} – deal ngon đang đợi",
+"Siêu deal nổ tung – {name} giảm giá ngập tràn",
+"Không mua hôm nay là tiếc – {name} giá rẻ bất ngờ",
+"Cơn mưa ưu đãi đổ bộ – {name} chính hãng giảm mạnh",
+"Deal cực hot – {name} chính hãng giá cực rẻ",
+"Thời gian có hạn – nhanh tay đặt {name}",
+"Săn sale sập sàn với {name} chính hãng",
+"Độc quyền hôm nay – {name} giảm giá siêu sâu",
+"Hàng hot giảm giá – {name} chính hãng giá hời",
+"Giá giảm cực mạnh – mua {name} càng sớm càng lời",
+"Rinh liền tay {name} chính hãng – siêu ưu đãi đang chờ",
+"Cơ hội có một không hai – {name} giảm khủng",
+"Giảm giá cực hot cho fan của {name}",
+"Mở sale toàn sàn – {name} chính hãng giá cực thấp",
+"Giá rẻ bất ngờ, {name} chính hãng chờ bạn săn",
+"Đặt nhanh – {name} chính hãng đang giảm cực sốc",
+"Siêu ưu đãi chỉ 24h – {name} giá hời khó tin",
+"Hàng hot nhất tuần – {name} chính hãng giảm sâu bất ngờ",
+"Săn giá hời cho {name} – cơ hội chỉ có hôm nay",
+"Chốt đơn nhanh tay, {name} đang giảm cực khủng",
+"Giá rẻ đến khó tin – {name} chính hãng đang hot",
+"Ưu đãi cực lớn – {name} chính hãng chờ bạn rước",
+"Deal khủng bất ngờ – {name} sale toàn sàn",
+"Hàng xịn {name} – mua ngay kẻo lỡ cơ hội",
+"Giảm sâu chạm đáy – {name} giá quá hời",
+"Đặt {name} ngay hôm nay, hưởng ưu đãi sốc",
+"Sản phẩm {name} đang giảm giá cực kỳ hấp dẫn",
+"Siêu sale chính hãng – {name} giá rẻ hết nấc",
+"Nhanh tay kẻo hết – {name} đang cháy hàng",
+"Giảm khủng chưa từng có – {name} hot trend 2025",
+"Deal cực hời – {name} chính hãng giá siêu tốt",
+"Giảm giá ngập tràn – {name} chính hãng đồng loạt sale",
+"Giá hời bất ngờ cho fan trung thành của {name}",
+"Mua {name} hôm nay – tiết kiệm cực lớn",
+"Ưu đãi có hạn – {name} giá tốt nhất trong năm",
+"Cực deal đang chờ – {name} giảm giá siêu sâu",
+"Cập bến kho sale – {name} chính hãng giá cực sốc",
+"Mở bát tháng mới với {name} – giá ưu đãi siêu ngon",
+"Chốt deal liền tay – {name} giá mềm chưa từng thấy",
+"Cực phẩm {name} chính hãng – giảm sâu tới bến",
+"Giá ưu đãi chạm sàn – {name} hot nhất hôm nay",
+"Sắm ngay {name}, nhận deal cực lời",
+"Đừng ngó lơ – {name} chính hãng đang giảm cực mạnh",
+"Mua {name} chính hãng hôm nay – giá giảm tới đáy",
+"Deal ngon ngất ngây – {name} giá hời siêu khủng",
+"Chương trình sốc: {name} giảm giá toàn sàn",
+"Cơn bão sale đổ bộ – {name} giá siêu rẻ",
+"Hàng hot {name} – giá cực ưu đãi chỉ trong hôm nay",
+"Cơ hội săn {name} chính hãng với giá cực lời",
+"Săn deal siêu tốc – {name} giảm đến không ngờ",
+"Mua {name} càng sớm, giá càng tốt",
+"Đại hạ giá toàn shop – {name} chính hãng siêu hot",
+"Chỉ còn vài suất ưu đãi cho {name}",
+"Mua ngay {name} – giá tốt bất ngờ đang chờ bạn",
+"Giảm giá sâu nhất tháng – {name} chính hãng siêu ưu đãi",
+"Săn deal vàng cho {name}, tiết kiệm cực lớn",
+"Đặc quyền hôm nay: {name} giảm giá cực hấp dẫn",
+"Giá ngon không tưởng – {name} chính hãng chỉ còn hôm nay",
+"Lướt thấy {name} là auto thả tim ❤️ – giá này mà không chốt thì hơi phí!",
+"Giá mềm như bánh flan 🍮 – {name} chính hãng đang chờ bạn rước!",
+"Đừng để {name} nằm giỏ quá lâu 😭 – sale xong là bay mất đó!",
+"Team săn sale đâu rồi, {name} đang xả hàng kìa 🔥",
+"Nghe nói ai chốt {name} hôm nay là hên cả tuần 😉",
+"Giảm giá sốc quá trời 😱 – {name} chính hãng rẻ như cho!",
+"Giá này không mua {name} là bỏ lỡ chân ái luôn á 😍",
+"Thề luôn, giá {name} này còn rẻ hơn ly trà sữa 🧋",
+"Chậm tay là out game 😤 – {name} chính hãng đang cháy hàng rồi!",
+"Ai chốt nhanh thì lời, ai chần chừ là tiếc 😆 – {name} siêu ưu đãi!",
+"Sale to bằng cái trời 🌤 – {name} chính hãng hạ giá cực mạnh!",
+"Deal ngon hơn người yêu cũ 💔 – {name} giá siêu hời luôn nha!",
+"Không tin nổi luôn 😱 – {name} giảm sâu hơn cả lòng đại dương!",
+"Cảnh báo: {name} đang hot, xem xong là auto muốn mua 😜",
+"Vừa đẹp, vừa rẻ, lại chính hãng – {name} chứ còn ai!",
+"Bấm vào xem thử thôi mà lỡ tay chốt {name} luôn 😅",
+"Mấy anh chị ơi, {name} giảm sốc quá, chậm tay là mất tiêu 🏃‍♀️",
+"Cảnh báo ví mỏng 💸 – {name} giá hời quá khó cưỡng!",
+"Mua {name} hôm nay, mai khỏi hối hận 😎",
+"Giảm giá thật hay mơ vậy trời 😍 – {name} chính hãng siêu rẻ luôn!",
+"Lướt Shopee thấy {name} giảm giá mà tim muốn rớt luôn 😍",
+"Ai đang on Shopee mà chưa chốt {name} là bỏ lỡ deal ngon nha 😜",
+"Mấy chị em ơi, Shopee báo tin vui nè – {name} đang sale siêu to khổng lồ 🎉",
+"Đang tám trên Shopee mà thấy giá {name} vậy là phải dừng tám để chốt đơn liền 🤭",
+"Hàng chính hãng {name} đang hot rần rần trên Shopee luôn đó 🔥",
+"Shopee réo tên bạn rồi kìa 😆 – {name} đang giảm giá cực hời!",
+"Coi chừng lướt Shopee xong auto nghèo vì {name} rẻ quá 😂",
+"Deal nóng hổi vừa thổi vừa mua 😍 – {name} chính hãng trên Shopee",
+"Bỏ qua {name} hôm nay, mai lên Shopee lại tiếc đứt ruột 😭",
+"Ai đang Shopee rảnh tay thì ghé liền, {name} đang sale shock kìa 🔥",
+"Báo động đỏ trên Shopee 🚨 – {name} giảm giá cực mạnh!",
+"Shopee hôm nay nhộn nhịp quá trời, {name} cháy đơn rồi kìa 💥",
+"Không nói nhiều, deal {name} này Shopee phải gọi là ‘đỉnh của chóp’ 🤩",
+"Tag ngay người yêu Shopee vào xem {name}, giá ngon quá nè 😆",
+"Shopee sáng nay toàn thấy người ta khoe chốt {name} 😭 mình chưa kịp mua!",
+"Shopee thông báo: {name} vừa cập bến sale siêu hot 🔥",
+"Cứ mở Shopee là thấy deal ngon – đặc biệt là {name} này luôn nha 💙",
+"Thời tiết nóng mà deal Shopee còn nóng hơn 🥵 – {name} chính hãng giảm cực sâu!",
+"Mấy bạn Shopee đừng ngủ quên, {name} đang cháy hàng rồi đó 🏃‍♀️",
+"Không đùa đâu nha, {name} đang là top trending Shopee luôn á 😍",
+"Trời ơi, hàng {name} em mới về, đẹp xuất sắc luôn 🥰 ai chốt trước em để riêng nè!",
+"Không dám nói quá chứ {name} lần này hot thiệt sự 🔥 chậm tay là hết hàng nha!",
+"Em nói thật, giá {name} này mà không mua là uổng lắm luôn á 😭",
+"Mấy chị ơi, {name} chính hãng em đang sale nè, giá hời quá trời luôn 😍",
+"Tay em run khi thấy giá {name} luôn 🥲 – quá rẻ, chốt nhanh kẻo hết!",
+"Còn đúng vài món {name} thôi đó nha 😭 ai thương thì chốt liền tay giúp em!",
+"Khách quen Shopee nhà em hôm nay ai cũng chốt {name}, còn chị chưa chốt là thiệt đó 😆",
+"Hàng xịn {name} mà giá thì dễ thương lắm nè 💕 nhắn em liền để em giữ cho nha!",
+"Em không nói nhiều, {name} giảm giá thật rồi nha 😱 ai tin nhắn đầu tiên là có deal tốt nhất!",
+"Ai hỏi hoài {name} đâu thì nay em báo tin vui nè 🎉 – hàng về full mẫu luôn!",
+"Chốt {name} sớm đi mấy chị, mai em hết hàng là tiếc lắm đó 😅",
+"Em nói thiệt, deal {name} này ngon hơn người yêu cũ 😜",
+"Shopee nhà em đang cháy đơn vì {name} đó nha, ai chưa chốt thì lẹ lên 💨",
+"Cả Shopee nhà em đang nhộn nhịp vì {name}, ai chưa có là lạc hậu liền 😆",
+"Hàng chính hãng {name}, giá em thương lắm 🥹 chốt sớm em free ship cho luôn!",
+"Mấy anh chị đừng lướt qua, {name} đang sale hời lắm á 😍",
+"Hôm nay em mood đẹp nên giảm thêm cho ai chốt {name} sớm nha 😘",
+"Chỉ còn vài chiếc {name} cuối cùng thôi đó 😭 – ai cần em giữ giùm liền!",
+"Em vừa khui thùng {name}, mùi hàng mới thơm phức luôn 😆 ai chốt thì em quay video gửi liền!",
+"Cảnh báo: {name} nhà em đang cháy đơn 🔥 – ai lỡ tay chậm là đợi chuyến sau luôn nha!",
+"Đừng lướt nữa 😤 – quay lại chốt {name} liền, kẻo mai hết em không cứu được đâu nha!",
+"Cảnh báo cháy đơn 🔥 – ai chưa chốt {name} là auto tiếc luôn á!",
+"Giá này mà không chốt là giận đó nha 😭 – em nói thiệt luôn á!",
+"Mấy anh chị ơi, {name} đang hot hòn họt nè 🔥 chốt nhanh kẻo trễ!",
+"Còn đúng 5 cái {name} thôi đó 😱 – em không dọa đâu, thật luôn á!",
+"Chốt liền tay đi, deal {name} này không lặp lại lần 2 đâu 😜",
+"Em không nói nhiều đâu, ai chốt sớm là lời to luôn 💰",
+"Mấy chị mà lăn tăn là mất liền á 😭 – {name} đang cháy hàng thật sự!",
+"Ai đọc tới đây mà chưa chốt {name} thì gan thiệt đó 😆",
+"Chốt lẹ đi nè, lát em khóa đơn rồi khỏi kêu em giữ nha 😏",
+"Thề luôn, ai chốt {name} hôm nay là lời gấp đôi mai luôn 😎",
+"Không chốt bây giờ, lát thấy 'hết hàng' lại khóc ròng đó 🥹",
+"Nhanh tay kẻo bay, {name} bên em chạy đơn như bay luôn 🚀",
+"Em đang gói hàng {name} mỏi tay luôn 😅 – ai chưa có thì chốt lẹ em giữ cho nha!",
+"Ai chốt đầu tiên em tặng thêm quà xịn luôn 🎁 – nhanh tay nào!",
+"Chốt liền đừng nghĩ nhiều – {name} hot vậy không mua thì tiếc đó 😍",
+"Đừng chờ mai, {name} hôm nay sale cực khủng 😭 – mai là giá khác liền!",
+"Inbox em liền tay nha 💬 – chậm là khỏi còn {name} mà chốt luôn á!",
+"Chốt lẹ giúp em, {name} này bán nhanh như bánh mì nóng luôn 🥐",
+"Chốt càng nhanh, giá càng mềm nha 😜 – {name} chính hãng xịn khỏi bàn!",
+"Còn đúng vài món {name} cuối cùng thôi nha 😭 – ai chưa chốt là mai khóc thật đó!",
+"Đang gói đơn mà tay run luôn 🫣 – {name} bán nhanh quá trời ơi!",
+"Mấy anh chị đừng lăn tăn nữa, {name} này mà hết em không biết tìm đâu ra luôn 😭",
+"Chốt lẹ kẻo hối hận, {name} bên em trôi nhanh hơn người yêu cũ 💨",
+"Thề luôn, deal {name} này không chốt là ngủ cũng thấy tiếc 😅",
+"Em cảnh báo trước rồi nha 😆 – {name} sắp cháy hàng thật sự đó!",
+"Ai đọc tới đây mà chưa nhắn em chốt {name} là gan to dữ luôn 😜",
+"Chốt lẹ đi mấy chị ơi, lát em off Shopee là hết sạch luôn đó 😭",
+"Giá này em mà không đăng sớm là bị khách la 😭 – {name} rẻ bất ngờ luôn!",
+"Mấy đơn {name} bay vèo vèo 🚀 – ai chưa chốt là trễ chuyến nha!",
+"Ai chốt nhanh em thương, em tặng thêm món nhỏ xinh luôn 🎁",
+"Đừng để em phải nhắn lại 'hết hàng rồi nha' 😢 – {name} sắp bay hết!",
+"Em nói nhỏ thôi 🤫 – {name} hôm nay sale bí mật, chốt nhanh mới kịp!",
+"Không nói nhiều, giá {name} này chỉ có hôm nay – mai là hết sạch 😭",
+"Ai chốt trước em ship trước nha 🚚 – chậm tay là phải đợi đợt sau luôn đó!",
+"Chốt liền tay đi mấy chị ơi 😍 – hàng xịn, giá rẻ, em nói thiệt luôn á!",
+"Đơn {name} chạy nhanh như tin đồn luôn 😆 – ai chưa chốt là mất liền nha!",
+"Inbox em lẹ kẻo trễ 💬 – {name} đang cháy hàng quá trời luôn!",
+"Giá này mà không chốt là em dỗi luôn á 😤",
+"Nhanh tay giúp em chốt đơn nha 😘 – {name} hôm nay hot quá trời luôn!"
+];
+
+const hashtagPool = [
+  "#KOLUytin",
+  "#HangMoiVe",
+  "#Shopxuhuong",
+  "#LuotVuiMuaLien",
+  "#VideohangTieudung",
+  "#VideohangDoisong",
+  "#VideohangGiadung",
+  "#VideohangMypham",
+  "#VideohangLamdep",
+  "#sandealcungkol",
+  "#KOLreview",
+  "#ShopeeVideo",
+  "#ShopeeCreator",
+  "#VideoReview",
+  "#SanSale",
+  "#DealHot",
+  "#GiaTot"
+];
+
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function randHashtags(n=3){
+  const pool=[...hashtagPool], out=[];
+  while(out.length<n && pool.length){
+    out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  return out.join(" ");
+}
+function generateCaption(name){
+  return rand(captionTemplates).replace("{name}",name) + " " + randHashtags(3);
+}
+
+/* ================= MOBILE SAFE COPY ================= */
+function copyToClipboard(text){
+  if(!text) return false;
+  try{
+    const ta=document.createElement("textarea");
+    ta.value=text;
+    ta.style.position="fixed";
+    ta.style.top="0";
+    ta.style.left="0";
+    ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){
+    console.error("COPY FAIL",e);
+    return false;
+  }
+}
+
+/* ================= UI ================= */
+const rowsEl=document.getElementById("rows");
+const summary=document.getElementById("summary");
+const currentName=document.getElementById("currentName");
+const captionText=document.getElementById("captionText");
+
+function save(){
+  localStorage.setItem("posted",JSON.stringify(posted));
+  localStorage.setItem("history",JSON.stringify(history));
+}
+
+function updateSummary(){
+  summary.textContent=
+    "ĐÃ ĐĂNG "+
+    Object.keys(posted).filter(i=>posted[i]).length+
+    "/"+PRODUCTS.length+" SẢN PHẨM";
+}
+
+function render(){
+  rowsEl.innerHTML="";
+  const q=document.getElementById("search").value.toLowerCase();
+  PRODUCTS
+    .filter(p=>!q||p.name.toLowerCase().includes(q)||("#"+p.id)===q)
+    .forEach(p=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><div class="dot ${posted[p.id]?'posted':''}"></div></td>
+        <td>#${p.id}</td>
+        <td>${p.name}</td>
+        <td class="actions">
+          <button class="blue" onclick="show(${p.id})">Hiển thị</button>
+          <button class="blue" onclick="unmark(${p.id})">Đánh dấu chưa đăng</button>
+        </td>`;
+      rowsEl.appendChild(tr);
+    });
+}
+
+function show(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  current=id;
+  currentName.textContent="Sản phẩm "+id;
+  captionText.value=generateCaption(p.name);
+  history.unshift("Hiển thị SP "+id);
+  save();render();
+}
+
+function unmark(id){
+  posted[id]=false;
+  save();render();updateSummary();
+}
+
+/* ================= EVENTS ================= */
+document.getElementById("randomBtn").onclick=()=>{
+  const list=PRODUCTS.filter(p=>!posted[p.id]);
+  const src=list.length?list:PRODUCTS;
+  show(src[Math.floor(Math.random()*src.length)].id);
+};
+
+document.getElementById("copyVideo").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  copyToClipboard(p.drive);
+  posted[current]=true;
+  updateSummary();save();
+};
+
+document.getElementById("copyShopee").onclick=()=>{
+  if(!current)return;
+  copyToClipboard(PRODUCTS.find(p=>p.id===current).shopee);
+};
+
+document.getElementById("copyCaption").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  const cap=generateCaption(p.name);
+  captionText.value=cap;
+  copyToClipboard(cap);
+};
+
+document.getElementById("toggleCaption").onclick=()=>captionBox.classList.toggle("hidden");
+document.getElementById("toggleHistory").onclick=()=>historyBox.classList.toggle("hidden");
+document.getElementById("clearHistory").onclick=()=>{
+  history=[];posted={};
+  save();render();updateSummary();
+};
+
+document.getElementById("search").oninput=render;
+
+updateSummary();render();
+</script>
+
+</body>
+</html>
