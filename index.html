@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sora Tool</title>
+
+<style>
+body{margin:0;background:#f2f2f2;font-family:system-ui}
+.phone{max-width:420px;margin:auto;background:#fff;min-height:100vh;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+header{text-align:center;padding:14px}
+#summary{font-weight:900;color:#b30000;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+button{border:0;border-radius:8px;padding:10px;font-weight:700;color:#fff;cursor:pointer}
+.red{background:#8b0000}
+.blue{background:#0b84ff}
+.label{text-align:center;font-weight:700;padding:10px}
+main{padding:12px}
+.search{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px}
+table{width:100%;border-collapse:collapse}
+td{padding:6px;font-size:14px;border-bottom:1px solid #eee}
+.actions{display:flex;flex-direction:column;gap:4px}
+.dot{width:10px;height:10px;border-radius:50%;background:#ccc}
+.dot.posted{background:green}
+textarea{width:100%;height:70px;border-radius:8px;border:1px solid #ddd;padding:8px}
+.hidden{display:none}
+.hist{max-height:120px;overflow:auto;border:1px dashed #ddd;border-radius:6px;padding:6px}
+</style>
+</head>
+
+<body>
+<div class="phone">
+
+<header>
+  <div id="summary">ĐÃ ĐĂNG 0/249 SẢN PHẨM</div>
+
+  <div class="grid">
+    <button class="red" id="randomBtn">Random Sản phẩm</button>
+    <div class="label" id="currentName">Sản phẩm -</div>
+
+    <button class="blue" id="copyVideo">Copy Link Video</button>
+    <button class="blue" id="importPosted">Nhập SP đã đăng</button>
+
+    <button class="blue" id="copyCaption">Copy Caption</button>
+    <button class="blue" id="copyPosted">Copy SP đã đăng</button>
+
+    <button class="blue" id="copyShopee">Copy Link Shopee</button>
+    <button class="blue" id="toggleHistory">Lịch sử</button>
+
+    <button class="blue" id="toggleCaption">Caption/Tên SP</button>
+    <button class="blue" id="clearHistory">Xóa Lịch sử</button>
+  </div>
+</header>
+
+<main>
+  <div id="captionBox" class="hidden">
+    <textarea id="captionText" readonly></textarea>
+  </div>
+
+  <div id="historyBox" class="hidden">
+    <div class="hist" id="historyList"></div>
+  </div>
+
+  <input class="search" id="search" placeholder="Tìm theo số (#1) hoặc từ khóa">
+
+  <table>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const PRODUCTS = [{"id":1,"name":"Combo 2 bịch khăn giấy rút Famapro","drive":"https://drive.google.com/file/d/18bXVjcaykvlkFxCHHGua8FJhvbgpRD6Z/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/43507750360"},{"id":2,"name":"Combo 2 bịch khăn giấy rút Famapro","drive":"https://drive.google.com/file/d/1xvdkZaWcBgT_67dqd8ebJyG3dpwT8uuZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/43507750360"},{"id":3,"name":"Combo 2 bịch khăn giấy rút Famapro","drive":"https://drive.google.com/file/d/1BT0LR0oPUwAnPnC-vGSpYoaVC8z2b5CB/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/43507750360"},{"id":4,"name":"Combo 2 bịch khăn giấy rút Famapro","drive":"https://drive.google.com/file/d/18WAbZtEhwXE5DWM9hEVdpbpmMBzG3NAW/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/43507750360"},{"id":5,"name":"Combo 2 bịch khăn giấy rút Famapro","drive":"https://drive.google.com/file/d/1ZzgLISnRKR0w_7YAhQizYzKAxOT0zLes/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/43507750360"},{"id":6,"name":"Phấn mắt dạng bút Focallure 2g","drive":"https://drive.google.com/file/d/1hPX0vaG3BXrUZa9-riDm2GPw6ZQaX_VP/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6202641403"},{"id":7,"name":"Phấn mắt dạng bút Focallure 2g","drive":"https://drive.google.com/file/d/1xrEeBdNrEQpTJpMSshAMaQV4Y0S3a7RG/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6202641403"},{"id":8,"name":"Phấn mắt dạng bút Focallure 2g","drive":"https://drive.google.com/file/d/1UqYv0rKeQ5GBRSoOjuzRGaAoW10bs7Gg/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6202641403"},{"id":9,"name":"Phấn mắt dạng bút Focallure 2g","drive":"https://drive.google.com/file/d/1l1mJHswGhxs-byFCBDM2XhxJumHXtaUI/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6202641403"},{"id":10,"name":"Phấn má hồng Focallure 11 màu","drive":"https://drive.google.com/file/d/1h0z3KmPq9JT0bsbcDY08e7BCcZYg2SkD/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3302707838"},{"id":11,"name":"Phấn má hồng Focallure 11 màu","drive":"https://drive.google.com/file/d/1At7Dg5N1Vx2q-vk47mPW8qb0uFc0AX96/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3302707838"},{"id":12,"name":"Phấn má hồng Focallure 11 màu","drive":"https://drive.google.com/file/d/15tDgOPbfsquzwfvMKIRO9NHJNlxbJXt_/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3302707838"},{"id":13,"name":"Phấn má hồng Focallure 11 màu","drive":"https://drive.google.com/file/d/1oUGPYM_h6C1cb0Ja-PbSsagssgCOHExN/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3302707838"},{"id":14,"name":"Phấn má hồng Focallure 11 màu","drive":"https://drive.google.com/file/d/1Xx_jmKpEa53ttoMsJHg9Z9C9IMu1Z83X/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3302707838"},{"id":15,"name":"Combo 5 hộp khẩu trang Famapro Baby","drive":"https://drive.google.com/file/d/1iOuSGGJcqwEk93EVqGEZ6xJ_WP71yKUk/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/3178688444"},{"id":16,"name":"Combo 5 hộp khẩu trang Famapro Baby","drive":"https://drive.google.com/file/d/1JygbAQWDwIMdb7Q70nPvVe10X68GiLKZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/3178688444"},{"id":17,"name":"Combo 5 hộp khẩu trang Famapro Baby","drive":"https://drive.google.com/file/d/1IJ2TFHHhAhLDzYZefb6zirKH0i6BHC6G/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/3178688444"},{"id":18,"name":"Combo 5 hộp khẩu trang Famapro Baby","drive":"https://drive.google.com/file/d/1NaFFdg3wKLup5G8Pw-B1VJZiF07Ije7m/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/3178688444"},{"id":19,"name":"Combo 5 hộp khẩu trang Famapro Baby","drive":"https://drive.google.com/file/d/1srpvUcQyVAntQ0wM0CR4NHMqptwN4wT1/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/3178688444"},{"id":20,"name":"Combo 10 hộp khẩu trang Famapro 4D","drive":"https://drive.google.com/file/d/17SxAychF8awtm0uVKn-vrogQ1va0Z0OS/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19913480161"},{"id":21,"name":"Combo 10 hộp khẩu trang Famapro 4D","drive":"https://drive.google.com/file/d/1GeV9kXxgYFc4kWgLNJEi145eERxgcwGZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19913480161"},{"id":22,"name":"Combo 10 hộp khẩu trang Famapro 4D","drive":"https://drive.google.com/file/d/1s4DVicUsBDGafweXL6_mGiVi50p4sJn5/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19913480161"},{"id":23,"name":"Combo 10 hộp khẩu trang Famapro 4D","drive":"https://drive.google.com/file/d/1bsxqaRJcu0EQlv402JwyaOJT5HIY8Z3L/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19913480161"},{"id":24,"name":"Combo 10 hộp khẩu trang Famapro 4D","drive":"https://drive.google.com/file/d/11r8PIcj768RDhJwrxVUp0HyM0XXUswre/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19913480161"},{"id":25,"name":"Bút kẻ mày Focallure 3 màu","drive":"https://drive.google.com/file/d/15oYNCA86UfV8AwRzD67Q6ItFo77cW5-C/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7002612682"},{"id":26,"name":"Bút kẻ mày Focallure 3 màu","drive":"https://drive.google.com/file/d/1LcbIA77W7iScBUCdgBJ3yw_basjg7mkB/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7002612682"},{"id":27,"name":"Bút kẻ mày Focallure 3 màu","drive":"https://drive.google.com/file/d/1nkL_V4tsqMyL6n1_4cv5I4kKFcjWBECw/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7002612682"},{"id":28,"name":"Bút kẻ mày Focallure 3 màu","drive":"https://drive.google.com/file/d/15fc7o7JKcqCl2pc-APnjTBvX5sxb0gsv/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7002612682"},{"id":29,"name":"Phấn bắt sáng Focallure Mochi Highlighter","drive":"https://drive.google.com/file/d/1vkf1jeDUmKYKDKcDINiepidfyi09ejJ0/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/29618599083"},{"id":30,"name":"Phấn bắt sáng Focallure Mochi Highlighter","drive":"https://drive.google.com/file/d/1nz8mqOGXnZASc5Awv_HCvC4jk9qAY5wP/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/29618599083"},{"id":31,"name":"Phấn bắt sáng Focallure Mochi Highlighter","drive":"https://drive.google.com/file/d/1p8T35eZKdhXh3dzof2AUqRClEnf7PT0T/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/29618599083"},{"id":32,"name":"Phấn bắt sáng Focallure Mochi Highlighter","drive":"https://drive.google.com/file/d/1MzsW9DjWCIUhg2L-DiU6jRDHR0TbLS5s/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/29618599083"},{"id":33,"name":"Combo 5 hộp khẩu trang Famapro Cô Gái","drive":"https://drive.google.com/file/d/1jcIPlW2WT3zK56eWboZlHNXDZXrDRNVb/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9129701926"},{"id":34,"name":"Combo 5 hộp khẩu trang Famapro Cô Gái","drive":"https://drive.google.com/file/d/1c_zGdZ5OGPaHu2wI2P-c04sf3v4jvuxI/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9129701926"},{"id":35,"name":"Combo 5 hộp khẩu trang Famapro Cô Gái","drive":"https://drive.google.com/file/d/1Xc6a_ClnRonga7RpR_ZD3QB9imsOKX3K/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9129701926"},{"id":36,"name":"Combo 5 hộp khẩu trang Famapro Cô Gái","drive":"https://drive.google.com/file/d/1nGWr0kN3pNOaRpYbs_PqpNQzLTJBsJ2F/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9129701926"},{"id":37,"name":"Combo 5 hộp khẩu trang Famapro Cô Gái","drive":"https://drive.google.com/file/d/1cOSm3_Dl_33EuJOZcUvjBIva4V_6IULU/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9129701926"},{"id":38,"name":"Kem nền BB Focallure che khuyết điểm","drive":"https://drive.google.com/file/d/1RSq9gTbbvozRvuTs_YOdVC6HL1nVYxDg/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3114622455"},{"id":39,"name":"Kem nền BB Focallure che khuyết điểm","drive":"https://drive.google.com/file/d/1t2bDX3BbCLhbfx4nBeRDBlxzfSSAUxpN/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3114622455"},{"id":40,"name":"Kem nền BB Focallure che khuyết điểm","drive":"https://drive.google.com/file/d/10fdSQa0Mbf9Ndi1eQt4nkeMaUBuEcku8/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3114622455"},{"id":41,"name":"Kem nền BB Focallure che khuyết điểm","drive":"https://drive.google.com/file/d/1vhgfSH0ReywdAUBVRJzyLSPGhAeR0LJ9/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3114622455"},{"id":42,"name":"Kem nền BB Focallure che khuyết điểm","drive":"https://drive.google.com/file/d/1LHiTi08LXCZ0SATqdSGKBmN9ls1D0lFa/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3114622455"},{"id":43,"name":"Gel kẻ mắt siêu mịn Focallure 1.7mm","drive":"https://drive.google.com/file/d/106U_WBVkdmD0Yjhd9Px-AntH49O-Y14p/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14107682341"},{"id":44,"name":"Gel kẻ mắt siêu mịn Focallure 1.7mm","drive":"https://drive.google.com/file/d/1mOY8264T9msZwh8PZWyAYBhjocMJ2ldo/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14107682341"},{"id":45,"name":"Gel kẻ mắt siêu mịn Focallure 1.7mm","drive":"https://drive.google.com/file/d/1t9gqpFpMla4UhOroIVBaw8KFHyWkipFy/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14107682341"},{"id":46,"name":"Hộp 30 viên khăn nén Famapro","drive":"https://drive.google.com/file/d/1XVdb3XX0cbCbeU-ry6Bfy1iEgFGoowmS/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/23729227250"},{"id":47,"name":"Hộp 30 viên khăn nén Famapro","drive":"https://drive.google.com/file/d/1ECKwm41ulIracratT3lyYhWWXFAgSTjY/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/23729227250"},{"id":48,"name":"Hộp 30 viên khăn nén Famapro","drive":"https://drive.google.com/file/d/11UArv39mU9rcxM191E4TS7pm7Cw_9iQV/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/23729227250"},{"id":49,"name":"Hộp 30 viên khăn nén Famapro","drive":"https://drive.google.com/file/d/1E2YDTrMT7CV-DgmodLfAZXUnoG2D8eBh/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/23729227250"},{"id":50,"name":"Hộp 30 viên khăn nén Famapro","drive":"https://drive.google.com/file/d/1A_MIGlvdXkxsK4WUapK4O1kEKN3IHqCt/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/23729227250"},{"id":51,"name":"Má hồng dạng kem Focallure 42g","drive":"https://drive.google.com/file/d/1ERCBzIcQ7PBcqp2IzopNsgprB1JnKH9Q/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102656530"},{"id":52,"name":"Má hồng dạng kem Focallure 42g","drive":"https://drive.google.com/file/d/1LuaG9qJYXhWGXXzr_nYmv6KfpE8n3Q5C/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102656530"},{"id":53,"name":"Má hồng dạng kem Focallure 42g","drive":"https://drive.google.com/file/d/1IDRWvdCwCHZUHTLTCsuu2bP3VlGBIPzW/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102656530"},{"id":54,"name":"Má hồng dạng kem Focallure 42g","drive":"https://drive.google.com/file/d/1OomMPtL8lidp-EAByWUSh-hVz5RmW3TP/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102656530"},{"id":55,"name":"Má hồng dạng kem Focallure 42g","drive":"https://drive.google.com/file/d/1UKx65Dj8JpkECn1sUicJOzl-82wkzU9a/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102656530"},{"id":56,"name":"Son môi Focallure lấp lánh 3g","drive":"https://drive.google.com/file/d/1C-WBFk0rEhf0cvngObewbYVlxGGnltSa/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5436211328"},{"id":57,"name":"Son môi Focallure lấp lánh 3g","drive":"https://drive.google.com/file/d/1_9aybqPkKjGDYVIY17nubWvtSlUN7zD2/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5436211328"},{"id":58,"name":"Son môi Focallure lấp lánh 3g","drive":"https://drive.google.com/file/d/1P5MK_0W444ZyLMBlEJef7xeYEjayXaOP/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5436211328"},{"id":59,"name":"Son môi Focallure lấp lánh 3g","drive":"https://drive.google.com/file/d/16MBrDnAFFcyoRfoYplkBbE51FBuhGwNm/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5436211328"},{"id":60,"name":"Son môi Focallure lấp lánh 3g","drive":"https://drive.google.com/file/d/1UWEIzSwcSweuQT-DkPYKTpvoENG3dyed/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5436211328"},{"id":61,"name":"Hộp 40 khẩu trang Famapro Max","drive":"https://drive.google.com/file/d/1W3AtkM6XeHMyNOWhp0QCGm8AORtpnkNN/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/7976541749"},{"id":62,"name":"Hộp 40 khẩu trang Famapro Max","drive":"https://drive.google.com/file/d/1FjpT2StFKkMBgd7688Tq9bmW6foGmLWA/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/7976541749"},{"id":63,"name":"Hộp 40 khẩu trang Famapro Max","drive":"https://drive.google.com/file/d/17AKZtthcKo2-0Ayq9fyuf-XSeqrww7zu/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/7976541749"},{"id":64,"name":"Hộp 40 khẩu trang Famapro Max","drive":"https://drive.google.com/file/d/1HLdMpKZuSVgqrz9iz2qMoV4Xat4tq_De/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/7976541749"},{"id":65,"name":"Hộp 40 khẩu trang Famapro Max","drive":"https://drive.google.com/file/d/1eOVQ-9Rhw_TmNAC0PTjtF8Z8GY93CV8P/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/7976541749"},{"id":66,"name":"Son lì Focallure dưỡng ẩm 2.8g","drive":"https://drive.google.com/file/d/1NPUUy23qyLBNhBGiAFC-TYXTDDusgsh2/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/20857789940"},{"id":67,"name":"Son lì Focallure dưỡng ẩm 2.8g","drive":"https://drive.google.com/file/d/1ICnEOFSmD8vI0vG2fJwafQuTk8m6tY-P/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/20857789940"},{"id":68,"name":"Son lì Focallure dưỡng ẩm 2.8g","drive":"https://drive.google.com/file/d/1QsfyJK2076cwEwpupxXnvBCXAcu0q_q6/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/20857789940"},{"id":69,"name":"Son lì Focallure dưỡng ẩm 2.8g","drive":"https://drive.google.com/file/d/1F3EpQrohe-yLeKZpeIuaDusi3CQMvWb9/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/20857789940"},{"id":70,"name":"Son lì Focallure dưỡng ẩm 2.8g","drive":"https://drive.google.com/file/d/1rs49JOiTe9focfqQKIKxYfE3d7LAsXcX/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/20857789940"},{"id":71,"name":"Bút kẻ mày Stagenius 2 đầu","drive":"https://drive.google.com/file/d/1BkpFChJUWWExjWL9R_8B5GCnw5k7rVLB/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4668668912"},{"id":72,"name":"Bút kẻ mày Stagenius 2 đầu","drive":"https://drive.google.com/file/d/14wP5G2xNHD_YGjjgFEEbX5A1AC5g4qx2/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4668668912"},{"id":73,"name":"Bút kẻ mày Stagenius 2 đầu","drive":"https://drive.google.com/file/d/1HFfjn4KEkLaRJgZ9sSF-f5DMc78Db0-b/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4668668912"},{"id":74,"name":"Bút kẻ mày Stagenius 2 đầu","drive":"https://drive.google.com/file/d/18dUbjNPIDFezLKcKvi3S72LA51vnY11C/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4668668912"},{"id":75,"name":"Son bóng Focallure căng mọng môi 3g","drive":"https://drive.google.com/file/d/16g6iNax-Hj31Zh8PJsrjHHj4ykDTVcKr/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4936213051"},{"id":76,"name":"Son bóng Focallure căng mọng môi 3g","drive":"https://drive.google.com/file/d/1h5r6IXFQ0sYPvKXiqOjHhErpkJL_vgaZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4936213051"},{"id":77,"name":"Son bóng Focallure căng mọng môi 3g","drive":"https://drive.google.com/file/d/12Yt2llDsyzslPFSnXjBu2_p5LrN5eSCf/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4936213051"},{"id":78,"name":"Son bóng Focallure căng mọng môi 3g","drive":"https://drive.google.com/file/d/1NcBDFbCnSofP_ydYGLwq9CLZM40CM2Ri/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4936213051"},{"id":79,"name":"Son bóng Focallure căng mọng môi 3g","drive":"https://drive.google.com/file/d/1ji-9qc0piXozTK4VhBUb3Vh3t-FfTgcD/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4936213051"},{"id":80,"name":"Kem lót Focallure 25g kiềm dầu","drive":"https://drive.google.com/file/d/1RTwl2df2X2UmdMgDC4ojK4Hc8cm88-I3/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3240946968"},{"id":81,"name":"Kem lót Focallure 25g kiềm dầu","drive":"https://drive.google.com/file/d/15ZVu-mcAbNzoRDx3N2LPyOWcEbMrgO8j/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3240946968"},{"id":82,"name":"Kem lót Focallure 25g kiềm dầu","drive":"https://drive.google.com/file/d/1rbTHbbvBsfIZtosZ7nGNvirgM7ZDXuP-/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3240946968"},{"id":83,"name":"Kem lót Focallure 25g kiềm dầu","drive":"https://drive.google.com/file/d/1G34q_F3T6CCm4RoA0dt1EAvhrXCM2b1u/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3240946968"},{"id":84,"name":"Kem lót Focallure 25g kiềm dầu","drive":"https://drive.google.com/file/d/1Yc0_s0MJd2KwBofeUv57Vbxlgnz8Nn72/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3240946968"},{"id":85,"name":"Kem tạo khối bắt sáng Focallure 6g","drive":"https://drive.google.com/file/d/1hTWUlN0PAQXG8sRUyUmn_nOT-DCY7kPU/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5502613677"},{"id":86,"name":"Kem tạo khối bắt sáng Focallure 6g","drive":"https://drive.google.com/file/d/1y8x0J3sjO0RNysQmMUtCyLzQpL8zoaxH/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5502613677"},{"id":87,"name":"Kem tạo khối bắt sáng Focallure 6g","drive":"https://drive.google.com/file/d/1g9EJ3k-FqJzmxs25W6a4MqahFOeB0lLg/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5502613677"},{"id":88,"name":"Kem tạo khối bắt sáng Focallure 6g","drive":"https://drive.google.com/file/d/1I4VEXg4C8qhMtKh4ZAMHPXiHWywd3Ao2/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5502613677"},{"id":89,"name":"Kem tạo khối bắt sáng Focallure 6g","drive":"https://drive.google.com/file/d/119jEj4MA2hA7L9J9oIeSqtIFyOUyz2bt/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5502613677"},{"id":90,"name":"Bút kẻ mày phẩy sợi Focallure 4 ngòi","drive":"https://drive.google.com/file/d/1V3X6i_Z_tofH7Xb4AEPglDTWF1AMk715/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4251292707"},{"id":91,"name":"Bút kẻ mày phẩy sợi Focallure 4 ngòi","drive":"https://drive.google.com/file/d/1kpy_ogo8od-VIStDCLnYtNuPco6IxTRk/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4251292707"},{"id":92,"name":"Bút kẻ mày phẩy sợi Focallure 4 ngòi","drive":"https://drive.google.com/file/d/1lZY8uruayUnW1EaXPmph3DEFvSPFriFW/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4251292707"},{"id":93,"name":"Phấn nền nén Focallure Vitamin C","drive":"https://drive.google.com/file/d/1lF3Jyr0duYADbnXwbiHdAhPT0Z0IGdTQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5359653296"},{"id":94,"name":"Phấn nền nén Focallure Vitamin C","drive":"https://drive.google.com/file/d/1o-HpvrUInkFdMWhZGfk0gaLo5EOaz7VL/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5359653296"},{"id":95,"name":"Phấn nền nén Focallure Vitamin C","drive":"https://drive.google.com/file/d/1lEQoQx59BPuiaUdvkhBQb8jZEdEHXiAV/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5359653296"},{"id":96,"name":"Phấn nền nén Focallure Vitamin C","drive":"https://drive.google.com/file/d/1MorcRXR7TnScyjVru3nmNHFllzk7hdL7/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5359653296"},{"id":97,"name":"Phấn nền nén Focallure Vitamin C","drive":"https://drive.google.com/file/d/1xcoRm_xXmCL8fxAXYDggAHg2qjzqyxLL/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5359653296"},{"id":98,"name":"Kem nền Focallure lâu trôi 24h 20g","drive":"https://drive.google.com/file/d/1_bxiWToXXIUAMEQTs67Nh6za3z19PP5f/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3641259638"},{"id":99,"name":"Kem nền Focallure lâu trôi 24h 20g","drive":"https://drive.google.com/file/d/1Hbj56a5IDDyw9yl4FaPhX5FApR5HAeEP/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3641259638"},{"id":100,"name":"Kem nền Focallure lâu trôi 24h 20g","drive":"https://drive.google.com/file/d/1EH2aiNu6SOsqb0OscTuiPJ__uLwKuBZg/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3641259638"},{"id":101,"name":"Kem nền Focallure lâu trôi 24h 20g","drive":"https://drive.google.com/file/d/15gswtskWmfcvEYskBwkl_SlC41K47Upb/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3641259638"},{"id":102,"name":"Kem nền Focallure lâu trôi 24h 20g","drive":"https://drive.google.com/file/d/1wUJbmClkJlZk82_F1HMJ3vlCOcvzP05P/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/3641259638"},{"id":103,"name":"Phấn phủ Focallure 3 màu 7g","drive":"https://drive.google.com/file/d/1BuKLSoxoDym9f1Yj8Jsyg_O8E5kYdUcl/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7502654188"},{"id":104,"name":"Phấn phủ Focallure 3 màu 7g","drive":"https://drive.google.com/file/d/1OWYLs-GVZCa4aINGExu9hFu3_3tskGeA/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7502654188"},{"id":105,"name":"Phấn phủ Focallure 3 màu 7g","drive":"https://drive.google.com/file/d/19beJcNVQiOsFq0HumZKqcurm1SeuxNdc/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7502654188"},{"id":106,"name":"Phấn phủ Focallure 3 màu 7g","drive":"https://drive.google.com/file/d/1KolKy5mHOgfJWCW5L02z46Ihd3tnozjx/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7502654188"},{"id":107,"name":"Phấn phủ Focallure 3 màu 7g","drive":"https://drive.google.com/file/d/1Hs76t0d81N8j8_d7cQGNPMFnkcJBR6bF/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7502654188"},{"id":108,"name":"Kem lót dưỡng ẩm Focallure 30g","drive":"https://drive.google.com/file/d/10VZY2yiJKkL9k_LPEyaX1e8ERunBMWUC/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18782116272"},{"id":109,"name":"Kem lót dưỡng ẩm Focallure 30g","drive":"https://drive.google.com/file/d/1csBvSA9etg-jelMQ--GgO4lM15s1p6L5/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18782116272"},{"id":110,"name":"Kem lót dưỡng ẩm Focallure 30g","drive":"https://drive.google.com/file/d/1jPzz7H4i4-cSYiaUBxl3gq7Ht6D9W-eZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18782116272"},{"id":111,"name":"Kem lót dưỡng ẩm Focallure 30g","drive":"https://drive.google.com/file/d/1TbSUCNL-A1_AFRlWwksfPTzQLT-9fSCE/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18782116272"},{"id":112,"name":"Kem lót dưỡng ẩm Focallure 30g","drive":"https://drive.google.com/file/d/1bzLkdymxIWHCbtwggWO36qQL5RHakcQD/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18782116272"},{"id":113,"name":"Máy đo huyết áp Omron JPN-750","drive":"https://drive.google.com/file/d/15kQaGCxT3jWchIM_6pjzOkyqturEW0Js/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650808"},{"id":114,"name":"Máy đo huyết áp Omron JPN-750","drive":"https://drive.google.com/file/d/1NBAAizw0IvaOMVs10s6LbrmM4fJYjeZO/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650808"},{"id":115,"name":"Máy đo huyết áp Omron JPN-750","drive":"https://drive.google.com/file/d/18XB3AmmJQ4_Y6SzxZfGZvofMjuoopeMs/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650808"},{"id":116,"name":"Máy đo huyết áp Omron JPN-750","drive":"https://drive.google.com/file/d/1fPfmz4UhxFkCwHV1pYHZZcmmW9VA4ClT/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650808"},{"id":117,"name":"Máy đo huyết áp Omron JPN-750","drive":"https://drive.google.com/file/d/1MDlfDAuMMNB8hIeiXP0zL1-wHAWH_sKw/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650808"},{"id":118,"name":"Bút kẻ mắt nước Focallure 2 đầu","drive":"https://drive.google.com/file/d/13Wz4y-fdheQ8PGJzlgVyAUnJqeLd-Qee/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14892168660"},{"id":119,"name":"Bút kẻ mắt nước Focallure 2 đầu","drive":"https://drive.google.com/file/d/1bL2GYFkrIsJDVXrSkr6F0W7G5IAqw7sY/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14892168660"},{"id":120,"name":"Bút kẻ mắt nước Focallure 2 đầu","drive":"https://drive.google.com/file/d/1-fmAkZmjn3qlPmg2ao0_gCfFTXx-joei/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14892168660"},{"id":121,"name":"Bút kẻ mắt nước Focallure 2 đầu","drive":"https://drive.google.com/file/d/18DI0IJQD5sRs7ZQWhl1Qs6XJgtbXc5Th/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14892168660"},{"id":122,"name":"Bút kẻ mắt nước Focallure 2 đầu","drive":"https://drive.google.com/file/d/19jSpxFjaSCKvU1VKUdlu8a3tMLrXuIe-/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14892168660"},{"id":123,"name":"Set kẻ mắt kẻ mày Focallure","drive":"https://drive.google.com/file/d/1ssYsoRRzhxfmga-eIsFoOE2PLFMQJRMC/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/11827179138"},{"id":124,"name":"Set kẻ mắt kẻ mày Focallure","drive":"https://drive.google.com/file/d/1SkcINMZpMWG2UUjxr_aZlaB8jS58Smgs/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/11827179138"},{"id":125,"name":"Set kẻ mắt kẻ mày Focallure","drive":"https://drive.google.com/file/d/1mVsH4W1-YZaKIUBM_IhDkH1xVFk3IFk5/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/11827179138"},{"id":126,"name":"Set kẻ mắt kẻ mày Focallure","drive":"https://drive.google.com/file/d/1Pxdtq2XMVk6q4Um-c0_p9l6oVeSPmo1l/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/11827179138"},{"id":127,"name":"Set kẻ mắt kẻ mày Focallure","drive":"https://drive.google.com/file/d/1JUiKeKtmIdT5FZUYF7URF8eGpBOpznxx/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/11827179138"},{"id":128,"name":"Combo 10 hộp khẩu trang Famapro 6D","drive":"https://drive.google.com/file/d/1XsfHDrmBa12YFW_CdYEAEpN8QlEck2EA/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/27392429845"},{"id":129,"name":"Combo 10 hộp khẩu trang Famapro 6D","drive":"https://drive.google.com/file/d/1C0he8IHTWWZDhOTii3R8n_oZeftogAbb/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/27392429845"},{"id":130,"name":"Combo 10 hộp khẩu trang Famapro 6D","drive":"https://drive.google.com/file/d/1_hxryenQZ8nxIe4gR5nhLLWM6SrJPypC/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/27392429845"},{"id":131,"name":"Phấn phủ Focallure kiềm dầu 15g","drive":"https://drive.google.com/file/d/1BdwEgwAC879Q7Qe5TsbUMukcCaR35Zsu/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4056227426"},{"id":132,"name":"Phấn phủ Focallure kiềm dầu 15g","drive":"https://drive.google.com/file/d/1RgxF6lAhhhV7dhaA4D-bqt_bRzBxkGBu/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4056227426"},{"id":133,"name":"Phấn phủ Focallure kiềm dầu 15g","drive":"https://drive.google.com/file/d/1KyJqoQgr5mH9IKJ9DpT-Yp3_VPk2GTMu/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4056227426"},{"id":134,"name":"Phấn phủ Focallure kiềm dầu 15g","drive":"https://drive.google.com/file/d/1eU0ahGRGzfca8ViT3TFFOKNFeI0VGix7/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4056227426"},{"id":135,"name":"Phấn phủ Focallure kiềm dầu 15g","drive":"https://drive.google.com/file/d/1CzrVEB1J2wt3nOSSFqpjeaIzODttFlOY/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/4056227426"},{"id":136,"name":"Thùng 30 gói giấy ăn Famapro","drive":"https://drive.google.com/file/d/1TjXuG4w_QUndRa2uZf40VI7h-ii4HlJV/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/29534193487"},{"id":137,"name":"Thùng 30 gói giấy ăn Famapro","drive":"https://drive.google.com/file/d/1F8tPpwVs7rB5d5eXxXNDO1_ojY21AeTw/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/29534193487"},{"id":138,"name":"Thùng 30 gói giấy ăn Famapro","drive":"https://drive.google.com/file/d/1fsjLuLj6UUoo2aTIHFFJxkPxKoRhS-yv/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/29534193487"},{"id":139,"name":"Thùng 30 gói giấy ăn Famapro","drive":"https://drive.google.com/file/d/1HfumdcUedIvjLm6GfxJMIV1LMJua8ePf/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/29534193487"},{"id":140,"name":"Thùng 30 gói giấy ăn Famapro","drive":"https://drive.google.com/file/d/11n0nJACzMnCQkVH149PvBxujw_UIXFPC/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/29534193487"},{"id":141,"name":"Bông tẩy trang Focallure cotton 22.5g","drive":"https://drive.google.com/file/d/11uDy-hl3ywnf-slKf3U9TCcc7ubDzIOB/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7812156570"},{"id":142,"name":"Bông tẩy trang Focallure cotton 22.5g","drive":"https://drive.google.com/file/d/1qLiCjQduKu7r85ZH1OwUa9gNMJwR04nE/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7812156570"},{"id":143,"name":"Bông tẩy trang Focallure cotton 22.5g","drive":"https://drive.google.com/file/d/1sY6WSu6Glbqp1sFOw3Jm9wnrqdNAopKk/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7812156570"},{"id":144,"name":"Bông tẩy trang Focallure cotton 22.5g","drive":"https://drive.google.com/file/d/1evdVmmY-jIjatUfWLEQcj2XFSP9Ocazb/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7812156570"},{"id":145,"name":"Mút tán kem nền Focallure giọt nước","drive":"https://drive.google.com/file/d/1fMdbbuxr-jhxufsCsTvYceSJ9cXbFogu/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5102747712"},{"id":146,"name":"Mút tán kem nền Focallure giọt nước","drive":"https://drive.google.com/file/d/1RR4AJOjh6mBR6tHnxTaJov-Mk4IJtpg6/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5102747712"},{"id":147,"name":"Mút tán kem nền Focallure giọt nước","drive":"https://drive.google.com/file/d/1s9t2HtOZA3vTM4_eK4we2ajM2zbfIAdS/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5102747712"},{"id":148,"name":"Mút tán kem nền Focallure giọt nước","drive":"https://drive.google.com/file/d/1WTsRNNqciAPNkO9Goj1We-mywgZtgvLP/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5102747712"},{"id":149,"name":"Mút tán kem nền Focallure giọt nước","drive":"https://drive.google.com/file/d/1_zTkfGzA72w9_36KusF8yAfHTi7BvaKY/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5102747712"},{"id":150,"name":"Combo 10 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1Y2s65vIlQHGlsnHN-3w6GA1uTN3bwFMQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/21713856030"},{"id":151,"name":"Combo 10 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1Dcvgbx0OBiDbYGxdd5WbJzXy1bjDGBIE/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/21713856030"},{"id":152,"name":"Combo 10 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1Awha1oByFcSUgmceIpdmW2RZHBeo-heM/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/21713856030"},{"id":153,"name":"Combo 10 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1HdyUsUfqjofhMG6kEap4n1lGH2AaxFRT/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/21713856030"},{"id":154,"name":"Mascara Focallure dài mi chống vón","drive":"https://drive.google.com/file/d/1OiBTdaJtrV8bRcvsTohZ9F8tQQ-y8LQh/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102640951"},{"id":155,"name":"Mascara Focallure dài mi chống vón","drive":"https://drive.google.com/file/d/15DDvHsQzKC8ic6INMPjrVPhV-KyX9qBH/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102640951"},{"id":156,"name":"Mascara Focallure dài mi chống vón","drive":"https://drive.google.com/file/d/1d7enbefJi2cRm-kKF9uJMjP0cpy9VneE/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102640951"},{"id":157,"name":"Mascara Focallure dài mi chống vón","drive":"https://drive.google.com/file/d/1H2eBeUrydD9Z_FM6vRsv9awKxI_hfACg/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6102640951"},{"id":158,"name":"Miếng dán lột mụn mũi Focallure 2.2g","drive":"https://drive.google.com/file/d/1kMOSxn9KFumi7BM3EAf3Xir-5WTfEeZZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7150596358"},{"id":159,"name":"Miếng dán lột mụn mũi Focallure 2.2g","drive":"https://drive.google.com/file/d/1_zZYRUC7mwfA6rV0un3oOmaCrYmWiGwX/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7150596358"},{"id":160,"name":"Miếng dán lột mụn mũi Focallure 2.2g","drive":"https://drive.google.com/file/d/1AbKkAgfnw1eJ7baCEUp-5inRPAnYsESY/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7150596358"},{"id":161,"name":"Miếng dán lột mụn mũi Focallure 2.2g","drive":"https://drive.google.com/file/d/1_19JUqIYknmoRtFEbwnNKhnAti83uwmQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7150596358"},{"id":162,"name":"Miếng dán lột mụn mũi Focallure 2.2g","drive":"https://drive.google.com/file/d/1D5t5VNJigHXIWsJkP-4VjTDrliRtBov-/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/7150596358"},{"id":163,"name":"Bút kẻ mắt nước Focallure siêu mịn","drive":"https://drive.google.com/file/d/1j3lh09-ruVNetRCA3XYAtJ9YssC5PUAI/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/9163100199"},{"id":164,"name":"Bút kẻ mắt nước Focallure siêu mịn","drive":"https://drive.google.com/file/d/1ZgSGrSNH_iholJf802QhT6ZFrPohGhxl/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/9163100199"},{"id":165,"name":"Bút kẻ mắt nước Focallure siêu mịn","drive":"https://drive.google.com/file/d/1_YENZWzC1M5B6q82_2Pc9wSIB53dU7Iz/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/9163100199"},{"id":166,"name":"Bút kẻ mắt nước Focallure siêu mịn","drive":"https://drive.google.com/file/d/169wKopVP7hZ5u317c7hZfZoEytr8s9vE/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/9163100199"},{"id":167,"name":"Bút kẻ mắt nước Focallure siêu mịn","drive":"https://drive.google.com/file/d/125psSV3-1egxRHTkJTnJqkrx7F9P-n-k/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/9163100199"},{"id":168,"name":"Kem trang điểm lông mày Focallure 4g","drive":"https://drive.google.com/file/d/122eyNypPUVui0_XDXfsWDPx4j6w2ItYa/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6101946369"},{"id":169,"name":"Kem trang điểm lông mày Focallure 4g","drive":"https://drive.google.com/file/d/14DMSzAL7CdGr47c1PwqazuX2e-xBvncj/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6101946369"},{"id":170,"name":"Kem trang điểm lông mày Focallure 4g","drive":"https://drive.google.com/file/d/16-skhOh-IP1uvPRNCCLeY7lYQr6_8K1J/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6101946369"},{"id":171,"name":"Kem trang điểm lông mày Focallure 4g","drive":"https://drive.google.com/file/d/14gLcuAGxJ5eNwaEacS32-5fHVxm-LMkG/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6101946369"},{"id":172,"name":"Kem trang điểm lông mày Focallure 4g","drive":"https://drive.google.com/file/d/14DZmLGDNILkbCzPt76YB-Z5Ud4RUseqp/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6101946369"},{"id":173,"name":"Gel kẻ mắt chân mày Focallure 5g","drive":"https://drive.google.com/file/d/1c-VLHV5V5qfMUxh_hq5A-bT4ff9y7-fg/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6241508929"},{"id":174,"name":"Gel kẻ mắt chân mày Focallure 5g","drive":"https://drive.google.com/file/d/1XpPr0YLEL-mosDZS4l-HP-Fc--LrVJ3c/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6241508929"},{"id":175,"name":"Gel kẻ mắt chân mày Focallure 5g","drive":"https://drive.google.com/file/d/1yefRALnQ53etgCDSwiqbOtqHPGpgbDr_/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6241508929"},{"id":176,"name":"Gel kẻ mắt chân mày Focallure 5g","drive":"https://drive.google.com/file/d/1pmJzlN43CqX1-XN5r1-N-PO2mjXg5NrN/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6241508929"},{"id":177,"name":"Gel kẻ mắt chân mày Focallure 5g","drive":"https://drive.google.com/file/d/1yYFRMfyhlu3q9egDQtmeaYv51jUF3Tly/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/6241508929"},{"id":178,"name":"Bút kẻ mắt gel Focallure 10g","drive":"https://drive.google.com/file/d/1Q4H9UBL0KIm-iIxmjvqXxeKBZxl_Ci6i/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13996147618"},{"id":179,"name":"Bút kẻ mắt gel Focallure 10g","drive":"https://drive.google.com/file/d/1JS4tsGjk3g1IkQlRcQtM0TmAoyxSbNZ_/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13996147618"},{"id":180,"name":"Bút kẻ mắt gel Focallure 10g","drive":"https://drive.google.com/file/d/1Bf0i_Yc7-Bl3ct1dGRtX90T3Ax6Nu4tV/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13996147618"},{"id":181,"name":"Bút kẻ mắt gel Focallure 10g","drive":"https://drive.google.com/file/d/1LuYcahx_Uo9yHbxit4W12tLUBdzCkO9f/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13996147618"},{"id":182,"name":"Bút kẻ mắt gel Focallure 10g","drive":"https://drive.google.com/file/d/1eLCybn1Ne-drBl88r74Y4X3veKdxj2AF/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13996147618"},{"id":183,"name":"Máy đo thành phần cơ thể Omron","drive":"https://drive.google.com/file/d/118p3z7OkB86u7k3f2hqAvsUUkYZy4r9r/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650836"},{"id":184,"name":"Máy đo thành phần cơ thể Omron","drive":"https://drive.google.com/file/d/17zo47hdzDNY4y5louEbTmftvCDt3q6Jg/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650836"},{"id":185,"name":"Máy đo thành phần cơ thể Omron","drive":"https://drive.google.com/file/d/15g6IhuMgLii0moiotL47qKLlIwppzgQe/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650836"},{"id":186,"name":"Máy đo thành phần cơ thể Omron","drive":"https://drive.google.com/file/d/1fXnmPLpQJWb4DB76QmMO8L4ahYPNmQUe/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650836"},{"id":187,"name":"Máy đo thành phần cơ thể Omron","drive":"https://drive.google.com/file/d/1YHONnwD7PYQzW7iZerbu6Ql0bt1E6Y7w/view?usp=drivesdk","shopee":"https://shopee.vn/product/63481848/1095650836"},{"id":188,"name":"Tinh chất DHC Super Collagen 294 Supreme","drive":"https://drive.google.com/file/d/1r03rEkxLv2P58UJeK99DpsSx6eNo2B4Q/view?usp=drivesdk","shopee":"https://shopee.vn/product/44806875/962207461"},{"id":189,"name":"Tinh chất DHC Super Collagen 294 Supreme","drive":"https://drive.google.com/file/d/1tk8hdduA1CAaHRsFp24obwvDCEXOKUM6/view?usp=drivesdk","shopee":"https://shopee.vn/product/44806875/962207461"},{"id":190,"name":"Tinh chất DHC Super Collagen 294 Supreme","drive":"https://drive.google.com/file/d/131v4xXFv4fkvJGzBLljVRmD_Wj2sj6vH/view?usp=drivesdk","shopee":"https://shopee.vn/product/44806875/962207461"},{"id":191,"name":"Tinh chất DHC Super Collagen 294 Supreme","drive":"https://drive.google.com/file/d/12ZxLfV3uxa8pYQx6UeCA6zWJRHIsCDzD/view?usp=drivesdk","shopee":"https://shopee.vn/product/44806875/962207461"},{"id":192,"name":"Tinh chất DHC Super Collagen 294 Supreme","drive":"https://drive.google.com/file/d/1N1i4NApExQrqyzLNx7uW1HS9I8l78yLQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/44806875/962207461"},{"id":193,"name":"Phấn nước BB Focallure Golden Age 12g","drive":"https://drive.google.com/file/d/1R1ja56dqiBVEq21oKZySAXVa0kGJKOiU/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13052003396"},{"id":194,"name":"Phấn nước BB Focallure Golden Age 12g","drive":"https://drive.google.com/file/d/1cBT0pt2CTdzGw3QjxjRtm6akT2YbZg7e/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13052003396"},{"id":195,"name":"Phấn nước BB Focallure Golden Age 12g","drive":"https://drive.google.com/file/d/1zIZPojlRwQj72dR2w_rcH3Wl6uIY7K1-/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13052003396"},{"id":196,"name":"Phấn nước BB Focallure Golden Age 12g","drive":"https://drive.google.com/file/d/1chPKQlO0D3lTU_6EC1Ugb8hDRfe-LFKq/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13052003396"},{"id":197,"name":"Phấn nước BB Focallure Golden Age 12g","drive":"https://drive.google.com/file/d/1DIyNfN56wZBhM3YP2WvJEfzNmswDYEfu/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/13052003396"},{"id":198,"name":"Hộp 40 khẩu trang Famapro Premium","drive":"https://drive.google.com/file/d/1TQYNv9g7ndN5fImtb1pj7benjZVe82e1/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9013379666"},{"id":199,"name":"Hộp 40 khẩu trang Famapro Premium","drive":"https://drive.google.com/file/d/1jfrVrOAnYKpxM0OWH1DrFZ_Ipggr9orm/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9013379666"},{"id":200,"name":"Hộp 40 khẩu trang Famapro Premium","drive":"https://drive.google.com/file/d/1-rQRqDZ8R8kt8AiwxhRBYVSDBEOlnUrd/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9013379666"},{"id":201,"name":"Hộp 40 khẩu trang Famapro Premium","drive":"https://drive.google.com/file/d/1YufYfZ4Ewa4Yn2kuCqEagwH1dWFFCAMa/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9013379666"},{"id":202,"name":"Hộp 40 khẩu trang Famapro Premium","drive":"https://drive.google.com/file/d/1FzJ5_PphJtRDXfGeMy4VET9127BQUVh-/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/9013379666"},{"id":203,"name":"Bút kẻ mắt lỏng Focallure 20g","drive":"https://drive.google.com/file/d/1d7-CuPjAqYKoCwq7biWOB9v7A5gQ83T6/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5602613640"},{"id":204,"name":"Bút kẻ mắt lỏng Focallure 20g","drive":"https://drive.google.com/file/d/1EHgn7XeOsvhlAwy9IKiy8tSfw-O5kAGS/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5602613640"},{"id":205,"name":"Bút kẻ mắt lỏng Focallure 20g","drive":"https://drive.google.com/file/d/1IhAk7KLIm9pHgd5u2SFCB8eRw8RI1koB/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5602613640"},{"id":206,"name":"Bút kẻ mắt lỏng Focallure 20g","drive":"https://drive.google.com/file/d/1EoJrbcmHWwFu3TUAagrdQxCuPLx51ZWB/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5602613640"},{"id":207,"name":"Bút kẻ mắt lỏng Focallure 20g","drive":"https://drive.google.com/file/d/1Di5tsMXHhCA-a3QfeGb0JZ36WIJq9zyM/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5602613640"},{"id":208,"name":"Chì kẻ mày Focallure EverSharp Blade","drive":"https://drive.google.com/file/d/1wSz_qactWcf5AZG6__ETg4SMrS2I-YcA/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/28131726885"},{"id":209,"name":"Chì kẻ mày Focallure EverSharp Blade","drive":"https://drive.google.com/file/d/1aoaU0hvoV4sl5VUIS2pfL0uCTY0Uk9gQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/28131726885"},{"id":210,"name":"Chì kẻ mày Focallure EverSharp Blade","drive":"https://drive.google.com/file/d/1CURTJTPRz1tq9DA-a3M7KDDUEOP45Gds/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/28131726885"},{"id":211,"name":"Chì kẻ mày Focallure EverSharp Blade","drive":"https://drive.google.com/file/d/1aXu7d8bymyB5aOgDSoNB4gGCwrY6yvdH/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/28131726885"},{"id":212,"name":"Chì kẻ mày Focallure EverSharp Blade","drive":"https://drive.google.com/file/d/1RcsYlGJWXuGzv7mN26LRHn5DJQ_n45xo/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/28131726885"},{"id":213,"name":"Xịt khóa nền Focallure 65g","drive":"https://drive.google.com/file/d/1Uf5gYwsUY6ytorJCZT0Brc0QfJgNonzs/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18270068868"},{"id":214,"name":"Xịt khóa nền Focallure 65g","drive":"https://drive.google.com/file/d/1YSIaX7PgfpEo4jZj17CHgxF1rR4pirqF/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18270068868"},{"id":215,"name":"Xịt khóa nền Focallure 65g","drive":"https://drive.google.com/file/d/18nksPiDHR6eTmkpgNDmWFYblScH_OZDv/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18270068868"},{"id":216,"name":"Xịt khóa nền Focallure 65g","drive":"https://drive.google.com/file/d/1hSm8uUJts1_4fXUcXZS1RwBM8vBqTKC3/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18270068868"},{"id":217,"name":"Xịt khóa nền Focallure 65g","drive":"https://drive.google.com/file/d/1dwXasO98aUqNOQhSvW-_Q2ps7fjFx8M0/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/18270068868"},{"id":218,"name":"Mascara kiêm kẻ mắt Focallure 2in1","drive":"https://drive.google.com/file/d/1T9xzNy27pIt5TZgjB6mF48XOw0bGIonI/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5868617715"},{"id":219,"name":"Mascara kiêm kẻ mắt Focallure 2in1","drive":"https://drive.google.com/file/d/1T0lMZZ4kX7ochImLGKR6SdxXQNkMruCX/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5868617715"},{"id":220,"name":"Mascara kiêm kẻ mắt Focallure 2in1","drive":"https://drive.google.com/file/d/16Nkzxo90p57CPuao6nMQ5naoxgxHh8Sa/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5868617715"},{"id":221,"name":"Mascara kiêm kẻ mắt Focallure 2in1","drive":"https://drive.google.com/file/d/1zcVh2xTV6IZ5jgxDgdwu8UrqbUOkH--W/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/5868617715"},{"id":222,"name":"Thùng 50 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1o_3nkU8X1Nj2uoRnQq7cABjiUpJwn8L2/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/11650144461"},{"id":223,"name":"Thùng 50 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1C6G_zypKMquGdIXjuSr7nkFWRGIB509I/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/11650144461"},{"id":224,"name":"Thùng 50 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1x2UUex3oyluauesuE6IwIuK9Yx4CgM8x/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/11650144461"},{"id":225,"name":"Thùng 50 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1ub_38DvJfSh_QFHb6dUzzUXctTCo4Mg_/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/11650144461"},{"id":226,"name":"Thùng 50 hộp khẩu trang Famapro Extra","drive":"https://drive.google.com/file/d/1fp4RfMBmyko84o5fDKLvnwvVvYV-2rM6/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/11650144461"},{"id":227,"name":"Mascara Focallure 3g chống nước","drive":"https://drive.google.com/file/d/1igpOex5b-nmhskDM1Jaebjedu1PTUrL0/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/23857409320"},{"id":228,"name":"Mascara Focallure 3g chống nước","drive":"https://drive.google.com/file/d/1-JHBEhQsEr26s0FNTYquHDHDfTsHXY07/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/23857409320"},{"id":229,"name":"Mascara Focallure 3g chống nước","drive":"https://drive.google.com/file/d/1Wcm4qiliFkFX77tUifMUoZahuW5QZmTH/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/23857409320"},{"id":230,"name":"Phấn phủ Focallure trang điểm nền 7g","drive":"https://drive.google.com/file/d/17_WM330MMIamgszTZ8G4idPK6BCZ07zJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14916668319"},{"id":231,"name":"Phấn phủ Focallure trang điểm nền 7g","drive":"https://drive.google.com/file/d/1p6bVJIC_vJmYsu_F-JFKhyvsof_F0BRu/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14916668319"},{"id":232,"name":"Phấn phủ Focallure trang điểm nền 7g","drive":"https://drive.google.com/file/d/1-Ac_U75wUUEXczevwmLnKLjMs50JJaVI/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14916668319"},{"id":233,"name":"Phấn phủ Focallure trang điểm nền 7g","drive":"https://drive.google.com/file/d/1b5duOENDoFTkSzZVhKHWyvnnMkxGNVsl/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14916668319"},{"id":234,"name":"Phấn phủ Focallure trang điểm nền 7g","drive":"https://drive.google.com/file/d/1jXjj249F738xPOj5whYkmx03WZOIoU3P/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/14916668319"},{"id":235,"name":"Cuộn 50 khăn lau đa năng Famapro","drive":"https://drive.google.com/file/d/1x4rSwKVEoK6_t_hLgZrys477IM2v7xdL/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19680522671"},{"id":236,"name":"Cuộn 50 khăn lau đa năng Famapro","drive":"https://drive.google.com/file/d/1r5nExm-HJeldYdJ6gCHP3xvS5k8YYGYN/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19680522671"},{"id":237,"name":"Cuộn 50 khăn lau đa năng Famapro","drive":"https://drive.google.com/file/d/1lewg2DwT7LD9DXYaCdkGEApiI8YbK4Q6/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19680522671"},{"id":238,"name":"Cuộn 50 khăn lau đa năng Famapro","drive":"https://drive.google.com/file/d/1d2Sdmpo65-EBoETgIRtNHpYH-6cQ1jeV/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19680522671"},{"id":239,"name":"Cuộn 50 khăn lau đa năng Famapro","drive":"https://drive.google.com/file/d/1JenBYJNnLWItIydMJOTsAiq9JcmSWWZY/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/19680522671"},{"id":240,"name":"Miếng dán lột mụn Focallure 10g","drive":"https://drive.google.com/file/d/1wTLXJniOtGCsNaDC8QtXN0-UWdf2JsgP/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/8087592859"},{"id":241,"name":"Miếng dán lột mụn Focallure 10g","drive":"https://drive.google.com/file/d/1-hqOMHNH2GR9mV3SehnpsmMs5pxO3JIY/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/8087592859"},{"id":242,"name":"Miếng dán lột mụn Focallure 10g","drive":"https://drive.google.com/file/d/1js1-UcLcR2PHReQQtHyOG_-tChpvJmbI/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/8087592859"},{"id":243,"name":"Miếng dán lột mụn Focallure 10g","drive":"https://drive.google.com/file/d/1-ky-IKHNlnRf-0vBc30aFCYJVbPiqymG/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/8087592859"},{"id":244,"name":"Miếng dán lột mụn Focallure 10g","drive":"https://drive.google.com/file/d/1xXU-RfmkLtCBUfmb2h_S-0rB1ut5pC5s/view?usp=drivesdk","shopee":"https://shopee.vn/product/182631756/8087592859"},{"id":245,"name":"Khăn nén đa năng Famapro dạng viên","drive":"https://drive.google.com/file/d/1de6op673bavjBrm7_m44q7o-USR4dUH8/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/16392908544"},{"id":246,"name":"Khăn nén đa năng Famapro dạng viên","drive":"https://drive.google.com/file/d/1C3x7OWRVkNm5NAiI1LbWRIRT069fBkBJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/16392908544"},{"id":247,"name":"Khăn nén đa năng Famapro dạng viên","drive":"https://drive.google.com/file/d/1y04WfGjyQEHu6WtZcNA_dXvldaP7O-wx/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/16392908544"},{"id":248,"name":"Khăn nén đa năng Famapro dạng viên","drive":"https://drive.google.com/file/d/1uEUtaGab8cfynfjE_u7aMvKVKFiVD-dd/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/16392908544"},{"id":249,"name":"Khăn nén đa năng Famapro dạng viên","drive":"https://drive.google.com/file/d/1EtbT0q7gJbMUeF0pai089GrPVEeVRdr1/view?usp=drivesdk","shopee":"https://shopee.vn/product/319625063/16392908544"}];
+let posted = JSON.parse(localStorage.getItem('posted')||'{}');
+let history = JSON.parse(localStorage.getItem('history')||'[]');
+let current = null;
+
+/* ================= CAPTION GENERATOR ================= */
+const captionTemplates = [
+  "Săn sale chính hãng {name} giá tốt",
+  "Deal hời cực sốc {name} chính hãng",
+  "Giá rẻ bất ngờ cho {name} chính hãng",
+  "Giảm sâu số lượng có hạn {name}",
+  "Đừng bỏ lỡ {name} giá cực hời",
+  "Siêu ưu đãi {name} chính hãng hôm nay",
+  "Mua ngay {name} với giá siêu rẻ",
+  "Sản phẩm hot {name} giảm mạnh",
+  "Giá sốc hôm nay cho {name}",
+  "Mua liền tay {name} giá ưu đãi",
+  "Flash sale cực khủng cho {name} chính hãng",
+"Nhanh tay chốt đơn {name} siêu ưu đãi",
+"Mua {name} hôm nay – nhận giá hời liền tay",
+"Cơ hội vàng săn {name} chính hãng giá rẻ",
+"Chớp ngay deal ngon cho {name}",
+"Giảm sốc cực sâu {name} chính hãng hôm nay",
+"Hàng hot {name} đang giảm giá cực mạnh",
+"Đặt nhanh kẻo lỡ {name} giá tốt nhất",
+"Săn ngay {name} chính hãng – deal cực hời",
+"Giá hủy diệt cho {name} chỉ hôm nay",
+"Cực phẩm {name} chính hãng giảm đến 50%",
+"Đại tiệc sale – {name} giá rẻ không tưởng",
+"Sắm liền {name} – ưu đãi đang chờ",
+"Đặc biệt hôm nay: {name} chính hãng siêu sale",
+"Siêu phẩm {name} giá tốt nhất thị trường",
+"Chỉ hôm nay: săn {name} giá sốc không giới hạn",
+"Giảm giá cực đỉnh – {name} chính hãng chờ bạn",
+"Deal ngon bất ngờ cho {name} siêu hot",
+"Cơ hội hiếm có – {name} giá giảm cực sâu",
+"Săn ngay {name} chính hãng – giá mềm bất ngờ",
+"Bắt trend liền tay với {name} chính hãng",
+"Giá ưu đãi đặc biệt cho tín đồ săn sale {name}",
+"Giảm sâu chưa từng có – {name} chờ bạn rinh",
+"Deal ngon khó cưỡng cho {name} chính hãng",
+"Thời điểm vàng để mua {name} giá rẻ",
+"Săn ngay {name} chính hãng – càng mua càng lời",
+"Mở bán cực hot – {name} giảm giá khủng",
+"Không thể tin nổi – {name} giá thấp kỷ lục",
+"Giảm giá cực đại – cơ hội sở hữu {name}",
+"Nhanh tay đặt {name} – ưu đãi giới hạn",
+"Mua {name} hôm nay, nhận quà liền tay",
+"Ưu đãi bùng nổ cho {name} chính hãng",
+"Săn deal nửa giá cho {name} – chỉ hôm nay",
+"Giảm mạnh mừng sale – {name} giá quá hời",
+"Hàng hot {name} – giá chỉ bằng nửa thị trường",
+"Cơ hội cuối cùng sở hữu {name} giá siêu hời",
+"Siêu sale chính hãng {name} – săn ngay kẻo lỡ",
+"Giá tụt sàn cho {name} chính hãng cực chất",
+"Giảm ngay hôm nay – {name} chính hãng giá mềm",
+"Mua {name} bây giờ – nhận ưu đãi khủng liền tay",
+"Chỉ hôm nay: {name} giảm giá cực hấp dẫn",
+"Đừng chần chừ – {name} đang sale cực khủng",
+"Ưu đãi khủng nhất tháng cho {name} chính hãng",
+"Giá giảm chạm đáy – {name} hot nhất hôm nay",
+"Săn deal {name} nhanh tay kẻo hết hàng",
+"Giảm giá khủng – cơ hội sở hữu {name} chính hãng",
+"Hàng xịn {name} giá rẻ bất ngờ, mua ngay!",
+"Chớp cơ hội – {name} chính hãng đang đại hạ giá",
+"Mua liền tay {name}, ưu đãi khủng chờ bạn",
+"Giảm giá chưa từng thấy cho {name}",
+"Deal cực chất – {name} giá siêu ưu đãi",
+"Cực phẩm {name} – giá chỉ bằng 1/2 hôm nay",
+"Nhanh tay rước {name} – giá giảm cực mạnh",
+"Hạ giá toàn sàn – {name} chính hãng giảm sâu",
+"Không thể bỏ qua: {name} đang sale cháy hàng",
+"Giảm giá cực sốc, săn ngay {name} chính hãng",
+"Hàng hot {name} chính hãng, mua sớm lời to",
+"Đặt ngay {name} – deal ngon đang đợi",
+"Cực kỳ hấp dẫn – {name} giá thấp chưa từng",
+"Siêu khuyến mãi {name}, giá chỉ hôm nay thôi!",
+"Giá cực mềm cho {name} – săn ngay kẻo lỡ!",
+"Mua {name} hôm nay, tiết kiệm liền tay",
+"Hàng chính hãng {name} – deal ngon đang đợi",
+"Siêu deal nổ tung – {name} giảm giá ngập tràn",
+"Không mua hôm nay là tiếc – {name} giá rẻ bất ngờ",
+"Cơn mưa ưu đãi đổ bộ – {name} chính hãng giảm mạnh",
+"Deal cực hot – {name} chính hãng giá cực rẻ",
+"Thời gian có hạn – nhanh tay đặt {name}",
+"Săn sale sập sàn với {name} chính hãng",
+"Độc quyền hôm nay – {name} giảm giá siêu sâu",
+"Hàng hot giảm giá – {name} chính hãng giá hời",
+"Giá giảm cực mạnh – mua {name} càng sớm càng lời",
+"Rinh liền tay {name} chính hãng – siêu ưu đãi đang chờ",
+"Cơ hội có một không hai – {name} giảm khủng",
+"Giảm giá cực hot cho fan của {name}",
+"Mở sale toàn sàn – {name} chính hãng giá cực thấp",
+"Giá rẻ bất ngờ, {name} chính hãng chờ bạn săn",
+"Đặt nhanh – {name} chính hãng đang giảm cực sốc",
+"Siêu ưu đãi chỉ 24h – {name} giá hời khó tin",
+"Hàng hot nhất tuần – {name} chính hãng giảm sâu bất ngờ",
+"Săn giá hời cho {name} – cơ hội chỉ có hôm nay",
+"Chốt đơn nhanh tay, {name} đang giảm cực khủng",
+"Giá rẻ đến khó tin – {name} chính hãng đang hot",
+"Ưu đãi cực lớn – {name} chính hãng chờ bạn rước",
+"Deal khủng bất ngờ – {name} sale toàn sàn",
+"Hàng xịn {name} – mua ngay kẻo lỡ cơ hội",
+"Giảm sâu chạm đáy – {name} giá quá hời",
+"Đặt {name} ngay hôm nay, hưởng ưu đãi sốc",
+"Sản phẩm {name} đang giảm giá cực kỳ hấp dẫn",
+"Siêu sale chính hãng – {name} giá rẻ hết nấc",
+"Nhanh tay kẻo hết – {name} đang cháy hàng",
+"Giảm khủng chưa từng có – {name} hot trend 2025",
+"Deal cực hời – {name} chính hãng giá siêu tốt",
+"Giảm giá ngập tràn – {name} chính hãng đồng loạt sale",
+"Giá hời bất ngờ cho fan trung thành của {name}",
+"Mua {name} hôm nay – tiết kiệm cực lớn",
+"Ưu đãi có hạn – {name} giá tốt nhất trong năm",
+"Cực deal đang chờ – {name} giảm giá siêu sâu",
+"Cập bến kho sale – {name} chính hãng giá cực sốc",
+"Mở bát tháng mới với {name} – giá ưu đãi siêu ngon",
+"Chốt deal liền tay – {name} giá mềm chưa từng thấy",
+"Cực phẩm {name} chính hãng – giảm sâu tới bến",
+"Giá ưu đãi chạm sàn – {name} hot nhất hôm nay",
+"Sắm ngay {name}, nhận deal cực lời",
+"Đừng ngó lơ – {name} chính hãng đang giảm cực mạnh",
+"Mua {name} chính hãng hôm nay – giá giảm tới đáy",
+"Deal ngon ngất ngây – {name} giá hời siêu khủng",
+"Chương trình sốc: {name} giảm giá toàn sàn",
+"Cơn bão sale đổ bộ – {name} giá siêu rẻ",
+"Hàng hot {name} – giá cực ưu đãi chỉ trong hôm nay",
+"Cơ hội săn {name} chính hãng với giá cực lời",
+"Săn deal siêu tốc – {name} giảm đến không ngờ",
+"Mua {name} càng sớm, giá càng tốt",
+"Đại hạ giá toàn shop – {name} chính hãng siêu hot",
+"Chỉ còn vài suất ưu đãi cho {name}",
+"Mua ngay {name} – giá tốt bất ngờ đang chờ bạn",
+"Giảm giá sâu nhất tháng – {name} chính hãng siêu ưu đãi",
+"Săn deal vàng cho {name}, tiết kiệm cực lớn",
+"Đặc quyền hôm nay: {name} giảm giá cực hấp dẫn",
+"Giá ngon không tưởng – {name} chính hãng chỉ còn hôm nay",
+"Lướt thấy {name} là auto thả tim ❤️ – giá này mà không chốt thì hơi phí!",
+"Giá mềm như bánh flan 🍮 – {name} chính hãng đang chờ bạn rước!",
+"Đừng để {name} nằm giỏ quá lâu 😭 – sale xong là bay mất đó!",
+"Team săn sale đâu rồi, {name} đang xả hàng kìa 🔥",
+"Nghe nói ai chốt {name} hôm nay là hên cả tuần 😉",
+"Giảm giá sốc quá trời 😱 – {name} chính hãng rẻ như cho!",
+"Giá này không mua {name} là bỏ lỡ chân ái luôn á 😍",
+"Thề luôn, giá {name} này còn rẻ hơn ly trà sữa 🧋",
+"Chậm tay là out game 😤 – {name} chính hãng đang cháy hàng rồi!",
+"Ai chốt nhanh thì lời, ai chần chừ là tiếc 😆 – {name} siêu ưu đãi!",
+"Sale to bằng cái trời 🌤 – {name} chính hãng hạ giá cực mạnh!",
+"Deal ngon hơn người yêu cũ 💔 – {name} giá siêu hời luôn nha!",
+"Không tin nổi luôn 😱 – {name} giảm sâu hơn cả lòng đại dương!",
+"Cảnh báo: {name} đang hot, xem xong là auto muốn mua 😜",
+"Vừa đẹp, vừa rẻ, lại chính hãng – {name} chứ còn ai!",
+"Bấm vào xem thử thôi mà lỡ tay chốt {name} luôn 😅",
+"Mấy anh chị ơi, {name} giảm sốc quá, chậm tay là mất tiêu 🏃‍♀️",
+"Cảnh báo ví mỏng 💸 – {name} giá hời quá khó cưỡng!",
+"Mua {name} hôm nay, mai khỏi hối hận 😎",
+"Giảm giá thật hay mơ vậy trời 😍 – {name} chính hãng siêu rẻ luôn!",
+"Lướt Shopee thấy {name} giảm giá mà tim muốn rớt luôn 😍",
+"Ai đang on Shopee mà chưa chốt {name} là bỏ lỡ deal ngon nha 😜",
+"Mấy chị em ơi, Shopee báo tin vui nè – {name} đang sale siêu to khổng lồ 🎉",
+"Đang tám trên Shopee mà thấy giá {name} vậy là phải dừng tám để chốt đơn liền 🤭",
+"Hàng chính hãng {name} đang hot rần rần trên Shopee luôn đó 🔥",
+"Shopee réo tên bạn rồi kìa 😆 – {name} đang giảm giá cực hời!",
+"Coi chừng lướt Shopee xong auto nghèo vì {name} rẻ quá 😂",
+"Deal nóng hổi vừa thổi vừa mua 😍 – {name} chính hãng trên Shopee",
+"Bỏ qua {name} hôm nay, mai lên Shopee lại tiếc đứt ruột 😭",
+"Ai đang Shopee rảnh tay thì ghé liền, {name} đang sale shock kìa 🔥",
+"Báo động đỏ trên Shopee 🚨 – {name} giảm giá cực mạnh!",
+"Shopee hôm nay nhộn nhịp quá trời, {name} cháy đơn rồi kìa 💥",
+"Không nói nhiều, deal {name} này Shopee phải gọi là ‘đỉnh của chóp’ 🤩",
+"Tag ngay người yêu Shopee vào xem {name}, giá ngon quá nè 😆",
+"Shopee sáng nay toàn thấy người ta khoe chốt {name} 😭 mình chưa kịp mua!",
+"Shopee thông báo: {name} vừa cập bến sale siêu hot 🔥",
+"Cứ mở Shopee là thấy deal ngon – đặc biệt là {name} này luôn nha 💙",
+"Thời tiết nóng mà deal Shopee còn nóng hơn 🥵 – {name} chính hãng giảm cực sâu!",
+"Mấy bạn Shopee đừng ngủ quên, {name} đang cháy hàng rồi đó 🏃‍♀️",
+"Không đùa đâu nha, {name} đang là top trending Shopee luôn á 😍",
+"Trời ơi, hàng {name} em mới về, đẹp xuất sắc luôn 🥰 ai chốt trước em để riêng nè!",
+"Không dám nói quá chứ {name} lần này hot thiệt sự 🔥 chậm tay là hết hàng nha!",
+"Em nói thật, giá {name} này mà không mua là uổng lắm luôn á 😭",
+"Mấy chị ơi, {name} chính hãng em đang sale nè, giá hời quá trời luôn 😍",
+"Tay em run khi thấy giá {name} luôn 🥲 – quá rẻ, chốt nhanh kẻo hết!",
+"Còn đúng vài món {name} thôi đó nha 😭 ai thương thì chốt liền tay giúp em!",
+"Khách quen Shopee nhà em hôm nay ai cũng chốt {name}, còn chị chưa chốt là thiệt đó 😆",
+"Hàng xịn {name} mà giá thì dễ thương lắm nè 💕 nhắn em liền để em giữ cho nha!",
+"Em không nói nhiều, {name} giảm giá thật rồi nha 😱 ai tin nhắn đầu tiên là có deal tốt nhất!",
+"Ai hỏi hoài {name} đâu thì nay em báo tin vui nè 🎉 – hàng về full mẫu luôn!",
+"Chốt {name} sớm đi mấy chị, mai em hết hàng là tiếc lắm đó 😅",
+"Em nói thiệt, deal {name} này ngon hơn người yêu cũ 😜",
+"Shopee nhà em đang cháy đơn vì {name} đó nha, ai chưa chốt thì lẹ lên 💨",
+"Cả Shopee nhà em đang nhộn nhịp vì {name}, ai chưa có là lạc hậu liền 😆",
+"Hàng chính hãng {name}, giá em thương lắm 🥹 chốt sớm em free ship cho luôn!",
+"Mấy anh chị đừng lướt qua, {name} đang sale hời lắm á 😍",
+"Hôm nay em mood đẹp nên giảm thêm cho ai chốt {name} sớm nha 😘",
+"Chỉ còn vài chiếc {name} cuối cùng thôi đó 😭 – ai cần em giữ giùm liền!",
+"Em vừa khui thùng {name}, mùi hàng mới thơm phức luôn 😆 ai chốt thì em quay video gửi liền!",
+"Cảnh báo: {name} nhà em đang cháy đơn 🔥 – ai lỡ tay chậm là đợi chuyến sau luôn nha!",
+"Đừng lướt nữa 😤 – quay lại chốt {name} liền, kẻo mai hết em không cứu được đâu nha!",
+"Cảnh báo cháy đơn 🔥 – ai chưa chốt {name} là auto tiếc luôn á!",
+"Giá này mà không chốt là giận đó nha 😭 – em nói thiệt luôn á!",
+"Mấy anh chị ơi, {name} đang hot hòn họt nè 🔥 chốt nhanh kẻo trễ!",
+"Còn đúng 5 cái {name} thôi đó 😱 – em không dọa đâu, thật luôn á!",
+"Chốt liền tay đi, deal {name} này không lặp lại lần 2 đâu 😜",
+"Em không nói nhiều đâu, ai chốt sớm là lời to luôn 💰",
+"Mấy chị mà lăn tăn là mất liền á 😭 – {name} đang cháy hàng thật sự!",
+"Ai đọc tới đây mà chưa chốt {name} thì gan thiệt đó 😆",
+"Chốt lẹ đi nè, lát em khóa đơn rồi khỏi kêu em giữ nha 😏",
+"Thề luôn, ai chốt {name} hôm nay là lời gấp đôi mai luôn 😎",
+"Không chốt bây giờ, lát thấy 'hết hàng' lại khóc ròng đó 🥹",
+"Nhanh tay kẻo bay, {name} bên em chạy đơn như bay luôn 🚀",
+"Em đang gói hàng {name} mỏi tay luôn 😅 – ai chưa có thì chốt lẹ em giữ cho nha!",
+"Ai chốt đầu tiên em tặng thêm quà xịn luôn 🎁 – nhanh tay nào!",
+"Chốt liền đừng nghĩ nhiều – {name} hot vậy không mua thì tiếc đó 😍",
+"Đừng chờ mai, {name} hôm nay sale cực khủng 😭 – mai là giá khác liền!",
+"Inbox em liền tay nha 💬 – chậm là khỏi còn {name} mà chốt luôn á!",
+"Chốt lẹ giúp em, {name} này bán nhanh như bánh mì nóng luôn 🥐",
+"Chốt càng nhanh, giá càng mềm nha 😜 – {name} chính hãng xịn khỏi bàn!",
+"Còn đúng vài món {name} cuối cùng thôi nha 😭 – ai chưa chốt là mai khóc thật đó!",
+"Đang gói đơn mà tay run luôn 🫣 – {name} bán nhanh quá trời ơi!",
+"Mấy anh chị đừng lăn tăn nữa, {name} này mà hết em không biết tìm đâu ra luôn 😭",
+"Chốt lẹ kẻo hối hận, {name} bên em trôi nhanh hơn người yêu cũ 💨",
+"Thề luôn, deal {name} này không chốt là ngủ cũng thấy tiếc 😅",
+"Em cảnh báo trước rồi nha 😆 – {name} sắp cháy hàng thật sự đó!",
+"Ai đọc tới đây mà chưa nhắn em chốt {name} là gan to dữ luôn 😜",
+"Chốt lẹ đi mấy chị ơi, lát em off Shopee là hết sạch luôn đó 😭",
+"Giá này em mà không đăng sớm là bị khách la 😭 – {name} rẻ bất ngờ luôn!",
+"Mấy đơn {name} bay vèo vèo 🚀 – ai chưa chốt là trễ chuyến nha!",
+"Ai chốt nhanh em thương, em tặng thêm món nhỏ xinh luôn 🎁",
+"Đừng để em phải nhắn lại 'hết hàng rồi nha' 😢 – {name} sắp bay hết!",
+"Em nói nhỏ thôi 🤫 – {name} hôm nay sale bí mật, chốt nhanh mới kịp!",
+"Không nói nhiều, giá {name} này chỉ có hôm nay – mai là hết sạch 😭",
+"Ai chốt trước em ship trước nha 🚚 – chậm tay là phải đợi đợt sau luôn đó!",
+"Chốt liền tay đi mấy chị ơi 😍 – hàng xịn, giá rẻ, em nói thiệt luôn á!",
+"Đơn {name} chạy nhanh như tin đồn luôn 😆 – ai chưa chốt là mất liền nha!",
+"Inbox em lẹ kẻo trễ 💬 – {name} đang cháy hàng quá trời luôn!",
+"Giá này mà không chốt là em dỗi luôn á 😤",
+"Nhanh tay giúp em chốt đơn nha 😘 – {name} hôm nay hot quá trời luôn!"
+];
+
+const hashtagPool = [
+  "#KOLUytin",
+  "#HangMoiVe",
+  "#Shopxuhuong",
+  "#LuotVuiMuaLien",
+  "#VideohangTieudung",
+  "#VideohangDoisong",
+  "#VideohangGiadung",
+  "#VideohangMypham",
+  "#VideohangLamdep",
+  "#sandealcungkol",
+  "#KOLreview",
+  "#ShopeeVideo",
+  "#ShopeeCreator",
+  "#VideoReview",
+  "#SanSale",
+  "#DealHot",
+  "#GiaTot"
+];
+
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function randHashtags(n=3){
+  const pool=[...hashtagPool], out=[];
+  while(out.length<n && pool.length){
+    out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  return out.join(" ");
+}
+function generateCaption(name){
+  return rand(captionTemplates).replace("{name}",name) + " " + randHashtags(3);
+}
+
+/* ================= MOBILE SAFE COPY ================= */
+function copyToClipboard(text){
+  if(!text) return false;
+  try{
+    const ta=document.createElement("textarea");
+    ta.value=text;
+    ta.style.position="fixed";
+    ta.style.top="0";
+    ta.style.left="0";
+    ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){
+    console.error("COPY FAIL",e);
+    return false;
+  }
+}
+
+/* ================= UI ================= */
+const rowsEl=document.getElementById("rows");
+const summary=document.getElementById("summary");
+const currentName=document.getElementById("currentName");
+const captionText=document.getElementById("captionText");
+
+function save(){
+  localStorage.setItem("posted",JSON.stringify(posted));
+  localStorage.setItem("history",JSON.stringify(history));
+}
+
+function updateSummary(){
+  summary.textContent=
+    "ĐÃ ĐĂNG "+
+    Object.keys(posted).filter(i=>posted[i]).length+
+    "/"+PRODUCTS.length+" SẢN PHẨM";
+}
+
+function render(){
+  rowsEl.innerHTML="";
+  const q=document.getElementById("search").value.toLowerCase();
+  PRODUCTS
+    .filter(p=>!q||p.name.toLowerCase().includes(q)||("#"+p.id)===q)
+    .forEach(p=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><div class="dot ${posted[p.id]?'posted':''}"></div></td>
+        <td>#${p.id}</td>
+        <td>${p.name}</td>
+        <td class="actions">
+          <button class="blue" onclick="show(${p.id})">Hiển thị</button>
+          <button class="blue" onclick="unmark(${p.id})">Đánh dấu chưa đăng</button>
+        </td>`;
+      rowsEl.appendChild(tr);
+    });
+}
+
+function show(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  current=id;
+  currentName.textContent="Sản phẩm "+id;
+  captionText.value=generateCaption(p.name);
+  history.unshift("Hiển thị SP "+id);
+  save();render();
+}
+
+function unmark(id){
+  posted[id]=false;
+  save();render();updateSummary();
+}
+
+/* ================= EVENTS ================= */
+document.getElementById("randomBtn").onclick=()=>{
+  const list=PRODUCTS.filter(p=>!posted[p.id]);
+  const src=list.length?list:PRODUCTS;
+  show(src[Math.floor(Math.random()*src.length)].id);
+};
+
+document.getElementById("copyVideo").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  copyToClipboard(p.drive);
+  posted[current]=true;
+  updateSummary();save();
+};
+
+document.getElementById("copyShopee").onclick=()=>{
+  if(!current)return;
+  copyToClipboard(PRODUCTS.find(p=>p.id===current).shopee);
+};
+
+document.getElementById("copyCaption").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  const cap=generateCaption(p.name);
+  captionText.value=cap;
+  copyToClipboard(cap);
+};
+
+document.getElementById("toggleCaption").onclick=()=>captionBox.classList.toggle("hidden");
+document.getElementById("toggleHistory").onclick=()=>historyBox.classList.toggle("hidden");
+document.getElementById("clearHistory").onclick=()=>{
+  history=[];posted={};
+  save();render();updateSummary();
+};
+
+document.getElementById("search").oninput=render;
+
+updateSummary();render();
+</script>
+
+</body>
+</html>
